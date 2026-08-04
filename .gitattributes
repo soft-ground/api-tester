@@ -1,0 +1,10 @@
+# This project runs in Linux containers, so normalize text line endings to LF.
+* text=auto eol=lf
+
+# Shell scripts must be LF (CRLF breaks execution inside the container).
+*.sh text eol=lf
+
+# Binary files (no line-ending conversion).
+*.png binary
+*.jpg binary
+*.ico binary

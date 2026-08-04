@@ -1,0 +1,159 @@
+// Data model for API Tester
+// See README.md for the overall design.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Groups APIs into folders. Self-references (parentId) allow multi-level nesting (e.g. System > Group > API).
+model Collection {
+  id        String        @id @default(cuid())
+  name      String
+  order     Int           @default(0)
+  // Parent group (none = top level). Deleting a parent promotes children to top level (SetNull, non-destructive).
+  parentId  String?
+  parent    Collection?   @relation("CollectionTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Collection[]  @relation("CollectionTree")
+  endpoints ApiEndpoint[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([parentId])
+}
+
+/// A saved API definition
+model ApiEndpoint {
+  id           String        @id @default(cuid())
+  collectionId String?
+  collection   Collection?   @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  name         String
+  order        Int           @default(0)
+  method       String        @default("GET") // GET/POST/PUT/PATCH/DELETE ...
+  baseUrl      String        @default("") // if empty, use the active environment's baseUrl
+  path         String        @default("") // e.g. "/orders/{id}"; supports {{var}} substitution
+  headers      Json          @default("[]") // [{ key, value, enabled }]
+  queryParams  Json          @default("[]") // [{ key, value, enabled }]
+  bodyType     String        @default("none") // none | json | form | raw
+  bodyTemplate String? // may contain {{var}}
+  authType     String        @default("none") // none | bearer | basic | apikey
+  authConfig   Json          @default("{}") // { token } | { username, password } | { key, value, in }
+  histories    CallHistory[]
+  steps        ScenarioStep[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([collectionId])
+}
+
+/// Per-environment variable set (dev / stg / prod ...)
+model Environment {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(false)
+  isShared  Boolean  @default(false) // shared group (always applied); stores scenario extracts
+  order     Int      @default(0)
+  variables Json     @default("{}") // { baseUrl, token, ... }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Dynamic value rules (request sequence, expressions, etc.)
+model VariableRule {
+  id        String   @id @default(cuid())
+  name      String   @unique // referenced as {{name}}
+  type      String   @default("fixed") // fixed | sequence | expression | timestamp | uuid | random
+  order     Int      @default(0)
+  config    Json     @default("{}") // sequence:{start,step} | expression:{expr} | fixed:{value} ...
+  state     Json     @default("{}") // preserves state such as a sequence's current value
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Call-history folder (user-defined history categorization)
+model HistoryFolder {
+  id        String        @id @default(cuid())
+  name      String
+  order     Int           @default(0)
+  histories CallHistory[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+/// Call history (request snapshot + response)
+model CallHistory {
+  id            String         @id @default(cuid())
+  endpointId    String?
+  endpoint      ApiEndpoint?   @relation(fields: [endpointId], references: [id], onDelete: SetNull)
+  scenarioRunId String?
+  scenarioRun   ScenarioRun?   @relation(fields: [scenarioRunId], references: [id], onDelete: Cascade)
+  folderId      String?
+  folder        HistoryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  reqMethod     String
+  reqUrl        String
+  reqHeaders    Json           @default("{}")
+  reqBody       String?
+  resStatus     Int?
+  resHeaders    Json           @default("{}")
+  resBody       String? // text response body (when resBodyEncoding=text)
+  resBodyBytes  Bytes? // raw binary response bytes (when resBodyEncoding=binary)
+  resBodyEncoding String       @default("text") // text | binary | none
+  resContentType String? // response Content-Type (used to decide render vs download)
+  resSize       Int? // stored response body byte count
+  resTruncated  Boolean        @default(false) // only partially stored due to the size cap
+  durationMs    Int?
+  success       Boolean        @default(false)
+  error         String?
+  executedAt    DateTime       @default(now())
+
+  @@index([endpointId])
+  @@index([scenarioRunId])
+  @@index([folderId])
+  @@index([executedAt])
+}
+
+/// Test scenario (test set)
+model Scenario {
+  id        String         @id @default(cuid())
+  name      String
+  desc      String?
+  // Table for data-driven iteration. [{col: value}, ...] — runs once per row, injecting {{col}}.
+  data      Json           @default("[]")
+  steps     ScenarioStep[]
+  runs      ScenarioRun[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+/// Scenario step
+model ScenarioStep {
+  id         String      @id @default(cuid())
+  scenarioId String
+  scenario   Scenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  order      Int         @default(0)
+  endpointId String
+  endpoint   ApiEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  overrides  Json        @default("{}") // parameters/variables to override for this step only
+  extracts   Json        @default("[]") // [{ name, from:"body", jsonPath:"$.data.id" }]
+  asserts    Json        @default("[]") // [{ path, op, value }]
+
+  @@index([scenarioId])
+}
+
+/// Scenario run result
+model ScenarioRun {
+  id         String        @id @default(cuid())
+  scenarioId String
+  scenario   Scenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  status     String        @default("running") // running | passed | failed
+  results    Json          @default("[]") // per-step result summary
+  histories  CallHistory[]
+  startedAt  DateTime      @default(now())
+  finishedAt DateTime?
+
+  @@index([scenarioId])
+}

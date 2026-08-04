@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# env
+.env
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+
+# prisma
+server/prisma/*.db
+
+# Backup files — may contain secrets (tokens, API keys, card numbers); never commit
+*backup*.json
+api-tester-backup-*.json
+
