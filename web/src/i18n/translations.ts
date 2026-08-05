@@ -320,6 +320,15 @@ const ko: Dict = {
   'req.apikeyValuePh': 'value ({{변수}} 사용 가능)',
   'req.addToHeader': '헤더에 추가',
   'req.addToQuery': '쿼리에 추가',
+  'req.viewRaw': 'Raw',
+  'req.viewFields': '필드',
+  'req.fieldsInvalid': 'JSON을 구조화할 수 없습니다. Raw 뷰에서 수정하세요.',
+  'req.fieldsEmpty': '필드가 없습니다. Raw 뷰에서 JSON을 입력하세요.',
+  'req.fieldsLegend': '체크 해제 = 전송 제외 · 배지 클릭 = 필수/선택 지정',
+  'req.fieldRequired': '필수',
+  'req.fieldOptional': '선택',
+  'req.fieldNeutral': '—',
+  'req.fieldObjHint': '객체/배열은 Raw 뷰에서 관리하세요',
 
   // history (extra)
   'hist.dblRename': '더블클릭: 이름변경',
@@ -618,6 +627,16 @@ const en: Dict = {
   'req.apikeyValuePh': 'value ({{var}} supported)',
   'req.addToHeader': 'Add to header',
   'req.addToQuery': 'Add to query',
+  'req.viewRaw': 'Raw',
+  'req.viewFields': 'Fields',
+  'req.fieldsInvalid': 'Cannot structure this JSON. Edit it in the Raw view.',
+  'req.fieldsEmpty': 'No fields. Enter JSON in the Raw view.',
+  'req.fieldsLegend':
+    'Unchecked = excluded from the request · click a badge to set required/optional',
+  'req.fieldRequired': 'required',
+  'req.fieldOptional': 'optional',
+  'req.fieldNeutral': '—',
+  'req.fieldObjHint': 'Manage objects/arrays in the Raw view',
 
   'hist.dblRename': 'Double-click: rename',
   'hist.moveToFolder': 'Move to folder',

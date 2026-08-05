@@ -11,6 +11,7 @@ import {
   getAvailableNames,
   updateEndpoint,
 } from '../api/client';
+import BodyFieldsEditor from './BodyFieldsEditor';
 import KeyValueEditor from './KeyValueEditor';
 import ResponseViewer from './ResponseViewer';
 import VarField from './VarField';
@@ -577,6 +578,7 @@ function BodyEditor({
   setFile: (id: string, f: File | null) => void;
 }) {
   const t = useT();
+  const [jsonView, setJsonView] = useState<'raw' | 'fields'>('raw');
   // Body input height: adjustable by dragging and saved to localStorage (kept across endpoints)
   const [height, setHeight] = useState<number>(
     () => Number(localStorage.getItem('bodyHeight')) || 200,
@@ -628,26 +630,50 @@ function BodyEditor({
         />
       ) : (
         bodyType !== 'none' && (
-          <div className="body-wrap">
-            <VarField
-              multiline
-              className="body-textarea"
-              style={{ height }}
-              placeholder={
-                bodyType === 'json' ? t('req.bodyJsonPh') : t('req.bodyRawPh')
-              }
-              value={body}
-              names={names}
-              onChange={onBody}
-            />
-            <div
-              className="body-resize"
-              onMouseDown={startResize}
-              title={t('req.dragHeight')}
-            >
-              <span className="body-resize-grip" />
-            </div>
-          </div>
+          <>
+            {bodyType === 'json' && (
+              <div className="json-view-toggle">
+                <button
+                  type="button"
+                  className={jsonView === 'raw' ? 'seg active' : 'seg'}
+                  onClick={() => setJsonView('raw')}
+                >
+                  {t('req.viewRaw')}
+                </button>
+                <button
+                  type="button"
+                  className={jsonView === 'fields' ? 'seg active' : 'seg'}
+                  onClick={() => setJsonView('fields')}
+                >
+                  {t('req.viewFields')}
+                </button>
+              </div>
+            )}
+            {bodyType === 'json' && jsonView === 'fields' ? (
+              <BodyFieldsEditor value={body} onChange={onBody} names={names} />
+            ) : (
+              <div className="body-wrap">
+                <VarField
+                  multiline
+                  className="body-textarea"
+                  style={{ height }}
+                  placeholder={
+                    bodyType === 'json' ? t('req.bodyJsonPh') : t('req.bodyRawPh')
+                  }
+                  value={body}
+                  names={names}
+                  onChange={onBody}
+                />
+                <div
+                  className="body-resize"
+                  onMouseDown={startResize}
+                  title={t('req.dragHeight')}
+                >
+                  <span className="body-resize-grip" />
+                </div>
+              </div>
+            )}
+          </>
         )
       )}
     </div>
