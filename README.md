@@ -1,5 +1,8 @@
 # API Tester
 
+[![CI](https://github.com/soft-ground/api-tester/actions/workflows/ci.yml/badge.svg)](https://github.com/soft-ground/api-tester/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 A **self-hosted web API testing tool** that runs locally with Docker.
 It replaces the ad-hoc "call things one by one with Swagger/curl" workflow with **saved and
 re-inspectable requests/responses**, **environment variables and dynamic values**, and
@@ -8,6 +11,20 @@ re-inspectable requests/responses**, **environment variables and dynamic values*
 > The browser never calls the target API directly. The backend acts as a **proxy executor** and
 > calls it on your behalf. That avoids CORS problems and records every request/response in history —
 > this is the core value of the tool over Swagger/curl.
+
+---
+
+## Screenshots
+
+_Screenshots live in [`docs/images/`](./docs/images) — see
+[docs/images/README.md](./docs/images/README.md) for the recommended captures. Once added,
+uncomment the block below._
+
+<!--
+| Request builder + Fields view | Scenario run |
+|---|---|
+| ![Fields view](docs/images/fields-view.png) | ![Scenario run](docs/images/scenario-run.png) |
+-->
 
 ---
 
@@ -99,6 +116,20 @@ The first run takes a few minutes to build the images. Add `-d` to run in the ba
 docker compose down        # stop containers (DB data is kept)
 docker compose down -v     # also delete DB data (the volume)
 ```
+
+### Run with prebuilt images (no build)
+
+To skip the local image build, use the images published to GitHub Container Registry (GHCR):
+
+```bash
+git clone https://github.com/soft-ground/api-tester.git
+cd api-tester
+cp .env.example .env
+docker compose -f docker-compose.ghcr.yml up -d
+```
+
+Images are published on each release. Pin a specific version by replacing `:latest` with `:1.3.0`
+in [docker-compose.ghcr.yml](./docker-compose.ghcr.yml).
 
 ---
 
