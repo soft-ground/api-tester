@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VariablesService } from '../variables/variables.service';
 import { ExecuteDto, KeyValueDto } from './dto';
+import { stripJsonComments } from './jsonc';
 
 const REQUEST_TIMEOUT_MS = 30000;
 
@@ -113,6 +114,13 @@ export class ExecutorService {
     dto: ExecuteDto,
     extraContext?: Record<string, string>,
   ): Promise<ExecuteResult> {
+    // 0) JSONC: allow // and /* */ comments in a JSON body (e.g. to annotate required/optional
+    //    fields). Strip them (string-aware) BEFORE variable substitution, so a {{var}} inside a
+    //    comment cannot block the request and the target API receives valid JSON.
+    if (dto.bodyType === 'json' && dto.body) {
+      dto = { ...dto, body: stripJsonComments(dto.body) };
+    }
+
     // 1) Variable substitution: replace {{var}} with active env variables + dynamic rule values.
     //    Rules are evaluated (sequence incremented) only when a placeholder is present.
     //    extraContext (scenario run context) overrides with the highest priority.

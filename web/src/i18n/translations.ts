@@ -312,7 +312,7 @@ const ko: Dict = {
   'req.blockedMsg':
     '치환되지 않은 변수가 있어 잘못된 요청이 전송되는 것을 막았습니다. 아래 변수를 확인해 주세요 (오타·미정의이거나, 표현식 규칙의 평가가 실패했을 수 있습니다).',
   'req.exprErrLabel': '— 표현식 오류: ',
-  'req.bodyJsonPh': '{\n  "key": "{{변수}}"\n}',
+  'req.bodyJsonPh': '{\n  "key": "{{변수}}"   // 주석(// , /* */) 사용 가능\n}',
   'req.bodyRawPh': '본문 입력',
   'req.dragHeight': '드래그로 높이 조절',
   'req.tokenPh': '토큰 ({{token}} 사용 가능)',
@@ -610,7 +610,7 @@ const en: Dict = {
   'req.blockedMsg':
     'A malformed request was blocked because some variables were not substituted. Check the variables below (they may be typos/undefined, or an expression rule may have failed to evaluate).',
   'req.exprErrLabel': '— expression error: ',
-  'req.bodyJsonPh': '{\n  "key": "{{var}}"\n}',
+  'req.bodyJsonPh': '{\n  "key": "{{var}}"   // comments (// , /* */) allowed\n}',
   'req.bodyRawPh': 'Request body',
   'req.dragHeight': 'Drag to resize height',
   'req.tokenPh': 'Token ({{token}} supported)',
