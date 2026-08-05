@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseOpenApi } from '../src/import/openapi';
+import { stripJsonComments } from '../src/executor/jsonc';
 
 describe('parseOpenApi (OpenAPI 3.x)', () => {
   const spec = {
@@ -60,6 +61,68 @@ describe('parseOpenApi (OpenAPI 3.x)', () => {
     expect(post.name).toBe('createUser');
     expect(post.bodyType).toBe('json');
     expect(JSON.parse(post.bodyTemplate!)).toEqual({ name: '', age: 0 });
+  });
+});
+
+describe('required/optional auto-annotation', () => {
+  const bodyOf = (schema: any) => {
+    const { endpoints } = parseOpenApi({
+      openapi: '3.0.0',
+      info: { title: 'A' },
+      paths: {
+        '/v': {
+          post: {
+            operationId: 'op',
+            requestBody: { content: { 'application/json': { schema } } },
+          },
+        },
+      },
+    });
+    return endpoints[0].bodyTemplate!;
+  };
+
+  it('annotates top-level primitives when required is declared', () => {
+    const body = bodyOf({
+      type: 'object',
+      required: ['mainAccountNo', 'depositorName'],
+      properties: {
+        Header: { type: 'object', properties: { apiName: { type: 'string' } } },
+        mainAccountNo: { type: 'string' },
+        depositorName: { type: 'string' },
+        memo: { type: 'string' },
+      },
+    });
+    expect(body).toMatch(/"mainAccountNo": "",?\s+\/\/ required/);
+    expect(body).toMatch(/"depositorName": "",?\s+\/\/ required/);
+    expect(body).toMatch(/"memo": "",?\s+\/\/ optional/);
+    // nested object value is not annotated
+    expect(body).not.toMatch(/"Header": \{\s+\/\//);
+    // still valid JSON once comments are stripped
+    expect(JSON.parse(stripJsonComments(body))).toEqual({
+      Header: { apiName: '' },
+      mainAccountNo: '',
+      depositorName: '',
+      memo: '',
+    });
+  });
+
+  it('adds NO comments when the schema declares no required info', () => {
+    const body = bodyOf({
+      type: 'object',
+      properties: { a: { type: 'string' }, b: { type: 'integer' } },
+    });
+    expect(body).not.toContain('//');
+    expect(JSON.parse(body)).toEqual({ a: '', b: 0 });
+  });
+
+  it('treats a malformed (non-array) required as no info', () => {
+    const body = bodyOf({
+      type: 'object',
+      required: 'name',
+      properties: { name: { type: 'string' } },
+    } as any);
+    expect(body).not.toContain('//');
+    expect(JSON.parse(body)).toEqual({ name: '' });
   });
 });
 

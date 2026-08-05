@@ -83,6 +83,59 @@ function resolveBaseUrl(spec: any): string {
   return '';
 }
 
+// Collect the declared `required` property names of an object schema (resolving $ref/allOf).
+// Returns null when the schema declares no required info at all, so callers can leave the body
+// un-annotated rather than guessing (avoids marking everything "optional" on loose specs).
+function collectRequired(spec: any, schema: any, depth = 0): string[] | null {
+  if (!schema || depth > 6) return null;
+  if (schema.$ref) return collectRequired(spec, resolveRef(spec, schema.$ref), depth + 1);
+  const req: string[] = [];
+  let found = false;
+  if (Array.isArray(schema.required)) {
+    req.push(...schema.required.filter((n: any) => typeof n === 'string'));
+    found = true;
+  }
+  if (Array.isArray(schema.allOf)) {
+    for (const s of schema.allOf) {
+      const r = collectRequired(spec, s, depth + 1);
+      if (r) {
+        req.push(...r);
+        found = true;
+      }
+    }
+  }
+  return found ? req : null;
+}
+
+// Serialize a sample body as JSONC. When the schema declares required-ness, annotate each
+// top-level PRIMITIVE field with `// required` or `// optional`. Object/array values and the
+// no-`required` case are left clean (no comments), so malformed or under-specified schemas
+// never produce noisy output. The format matches web/src/lib/jsoncFields so the Fields view
+// reads it losslessly.
+function serializeSampleBody(sample: any, required: string[] | null): string {
+  if (sample === null || typeof sample !== 'object' || Array.isArray(sample)) {
+    return JSON.stringify(sample, null, 2);
+  }
+  const keys = Object.keys(sample);
+  if (keys.length === 0) return '{}';
+  const reqSet = required ? new Set(required) : null;
+  const lines = keys.map((k, i) => {
+    const comma = i < keys.length - 1 ? ',' : '';
+    const v = sample[k];
+    const valueText = JSON.stringify(v, null, 2)
+      .split('\n')
+      .map((ln, idx) => (idx === 0 ? ln : '  ' + ln))
+      .join('\n');
+    let line = `  ${JSON.stringify(k)}: ${valueText}${comma}`;
+    const isPrimitive = v === null || typeof v !== 'object';
+    if (reqSet && isPrimitive) {
+      line += reqSet.has(k) ? '   // required' : '   // optional';
+    }
+    return line;
+  });
+  return `{\n${lines.join('\n')}\n}`;
+}
+
 // Extract a sample body from requestBody (3.x) or a body parameter (2.0).
 function extractBody(
   spec: any,
@@ -94,14 +147,16 @@ function extractBody(
     const json = content['application/json'] || content[Object.keys(content)[0]];
     if (json?.schema) {
       const sample = sampleFromSchema(spec, json.schema);
-      return { bodyType: 'json', bodyTemplate: JSON.stringify(sample, null, 2) };
+      const required = collectRequired(spec, json.schema);
+      return { bodyType: 'json', bodyTemplate: serializeSampleBody(sample, required) };
     }
   }
   // Swagger 2.0 body param
   const bodyParam = (op.parameters || []).find((p: any) => p.in === 'body');
   if (bodyParam?.schema) {
     const sample = sampleFromSchema(spec, bodyParam.schema);
-    return { bodyType: 'json', bodyTemplate: JSON.stringify(sample, null, 2) };
+    const required = collectRequired(spec, bodyParam.schema);
+    return { bodyType: 'json', bodyTemplate: serializeSampleBody(sample, required) };
   }
   return { bodyType: 'none', bodyTemplate: null };
 }
