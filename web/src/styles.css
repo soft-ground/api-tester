@@ -986,7 +986,7 @@ textarea:focus {
   flex: none;
   width: 20px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   text-align: right;
 }
@@ -994,7 +994,7 @@ textarea:focus {
   flex: none;
   width: 150px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.35;
   padding: 1px 6px;
   border: 1px solid transparent;
@@ -1034,7 +1034,7 @@ textarea:focus {
 }
 .bf-obj-hint {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 }
 .bf-badge {
@@ -1070,7 +1070,8 @@ textarea:focus {
 .bf-input {
   width: 100%;
   padding: 2px 6px;
-  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
   line-height: 1.35;
 }
 .bf-obj-preview {
