@@ -4,6 +4,7 @@ import { useT } from '../i18n';
 import {
   BodyField,
   FieldMeta,
+  isArrayLeaf,
   isPrimitive,
   parseBody,
   serializeBody,
@@ -16,9 +17,10 @@ interface Props {
   names: VarName[];
 }
 
-// Structured editor over the same JSONC body text (see lib/jsoncFields). Mounted only while
-// the Fields view is active, so it parses the current body once on mount and writes edits back
-// as the identical annotated format the Raw view uses.
+// Structured editor over the same JSONC body text (see lib/jsoncFields). Mounted only while the
+// Fields view is active, so it parses the current body once on mount and writes edits back as the
+// identical annotated format the Raw view uses. Objects expand recursively; keys and values are
+// editable; required/optional badge and the include toggle apply to primitive leaves.
 export default function BodyFieldsEditor({ value, onChange, names }: Props) {
   const t = useT();
   const [initial] = useState(() => parseBody(value));
@@ -32,106 +34,212 @@ export default function BodyFieldsEditor({ value, onChange, names }: Props) {
     setFields(next);
     onChange(serializeBody(next));
   };
-  const patch = (i: number, p: Partial<BodyField>) =>
-    commit(fields.map((f, idx) => (idx === i ? { ...f, ...p } : f)));
-
-  const cycleMeta = (m?: FieldMeta): FieldMeta | undefined =>
-    m === undefined ? 'required' : m === 'required' ? 'optional' : undefined;
-
-  const metaLabel = (m?: FieldMeta) =>
-    m === 'required'
-      ? t('req.fieldRequired')
-      : m === 'optional'
-        ? t('req.fieldOptional')
-        : t('req.fieldNeutral');
-
-  if (fields.length === 0) {
-    return <div className="bf-notice">{t('req.fieldsEmpty')}</div>;
-  }
 
   return (
     <div className="body-fields">
       <div className="bf-legend">{t('req.fieldsLegend')}</div>
-      {fields.map((f, i) => {
-        const prim = isPrimitive(f.value);
-        return (
-          <div className={`bf-row${f.included ? '' : ' excluded'}`} key={i}>
-            <input
-              type="checkbox"
-              className="bf-check"
-              checked={f.included}
-              disabled={!prim}
-              title={prim ? '' : t('req.fieldObjHint')}
-              onChange={(e) => patch(i, { included: e.target.checked })}
-            />
-            <span className="bf-key" title={f.key}>
-              {f.key}
-            </span>
-            {prim ? (
-              <button
-                type="button"
-                className={`bf-badge bf-${f.meta ?? 'none'}`}
-                onClick={() => patch(i, { meta: cycleMeta(f.meta) })}
-              >
-                {metaLabel(f.meta)}
-              </button>
-            ) : (
-              <span className="bf-badge bf-obj" title={t('req.fieldObjHint')}>
-                {Array.isArray(f.value) ? '[ ]' : '{ }'}
-              </span>
-            )}
-            <div className="bf-value">
-              <ValueInput
-                field={f}
-                names={names}
-                onValue={(v) => patch(i, { value: v })}
-              />
-            </div>
-          </div>
-        );
-      })}
+      <FieldList fields={fields} depth={0} names={names} onChange={commit} />
     </div>
   );
 }
 
-function ValueInput({
+function uniqueKey(fields: BodyField[]): string {
+  const taken = new Set(fields.map((f) => f.key));
+  let n = 1;
+  while (taken.has(`field${n}`)) n++;
+  return `field${n}`;
+}
+
+function FieldList({
+  fields,
+  depth,
+  names,
+  onChange,
+}: {
+  fields: BodyField[];
+  depth: number;
+  names: VarName[];
+  onChange: (f: BodyField[]) => void;
+}) {
+  const t = useT();
+  const setAt = (i: number, f: BodyField) =>
+    onChange(fields.map((x, idx) => (idx === i ? f : x)));
+  const removeAt = (i: number) =>
+    onChange(fields.filter((_, idx) => idx !== i));
+  const add = () =>
+    onChange([
+      ...fields,
+      { key: uniqueKey(fields), value: { kind: 'leaf', value: '' }, included: true },
+    ]);
+
+  return (
+    <div className="bf-list" style={depth ? { marginLeft: 16 } : undefined}>
+      {fields.map((f, i) => (
+        <FieldRow
+          key={i}
+          field={f}
+          depth={depth}
+          names={names}
+          onChange={(nf) => setAt(i, nf)}
+          onRemove={() => removeAt(i)}
+        />
+      ))}
+      <button type="button" className="bf-add" onClick={add}>
+        {t('req.fieldAdd')}
+      </button>
+    </div>
+  );
+}
+
+function FieldRow({
   field,
+  depth,
+  names,
+  onChange,
+  onRemove,
+}: {
+  field: BodyField;
+  depth: number;
+  names: VarName[];
+  onChange: (f: BodyField) => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  const [open, setOpen] = useState(true);
+
+  const isObj = field.value.kind === 'object';
+  const isArr = isArrayLeaf(field);
+  const isPrim = field.value.kind === 'leaf' && isPrimitive(field.value.value);
+
+  return (
+    <div className={`bf-row${field.included ? '' : ' excluded'}`}>
+      <div className="bf-line">
+        {isObj ? (
+          <button
+            type="button"
+            className="bf-caret"
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? '▾' : '▸'}
+          </button>
+        ) : (
+          <input
+            type="checkbox"
+            className="bf-check"
+            checked={field.included}
+            disabled={!isPrim}
+            title={isPrim ? '' : t('req.fieldArrHint')}
+            onChange={(e) => onChange({ ...field, included: e.target.checked })}
+          />
+        )}
+
+        <input
+          className="bf-keyedit"
+          value={field.key}
+          spellCheck={false}
+          onChange={(e) => onChange({ ...field, key: e.target.value })}
+        />
+
+        {isPrim ? (
+          <button
+            type="button"
+            className={`bf-badge bf-${field.meta ?? 'none'}`}
+            onClick={() => onChange({ ...field, meta: nextMeta(field.meta) })}
+          >
+            {metaLabel(field.meta, t)}
+          </button>
+        ) : (
+          <span className="bf-badge bf-obj">{isArr ? '[ ]' : '{ }'}</span>
+        )}
+
+        <div className="bf-value">
+          {isObj ? (
+            <span className="bf-obj-hint">{`{ ${(field.value as any).fields.length} }`}</span>
+          ) : (
+            <LeafInput
+              value={(field.value as any).value}
+              names={names}
+              onValue={(v) => onChange({ ...field, value: { kind: 'leaf', value: v } })}
+            />
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="bf-del"
+          title={t('common.delete')}
+          onClick={onRemove}
+        >
+          ✕
+        </button>
+      </div>
+
+      {isObj && open && (
+        <FieldList
+          fields={(field.value as any).fields}
+          depth={depth + 1}
+          names={names}
+          onChange={(cf) =>
+            onChange({ ...field, value: { kind: 'object', fields: cf } })
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+function LeafInput({
+  value,
   names,
   onValue,
 }: {
-  field: BodyField;
+  value: unknown;
   names: VarName[];
   onValue: (v: unknown) => void;
 }) {
-  const v = field.value;
-
-  if (typeof v === 'string') {
+  const t = useT();
+  if (typeof value === 'string') {
     return (
       <VarField
         className="bf-input"
-        value={v}
+        value={value}
         names={names}
         onChange={(nv) => onValue(nv)}
       />
     );
   }
-  if (v !== null && typeof v === 'object') {
-    // Objects/arrays are shown read-only here; edit them in the Raw view.
-    return <code className="bf-obj-preview">{JSON.stringify(v)}</code>;
+  if (value !== null && typeof value === 'object') {
+    // arrays: read-only preview, edit in Raw
+    return (
+      <code className="bf-obj-preview" title={t('req.fieldArrHint')}>
+        {JSON.stringify(value)}
+      </code>
+    );
   }
-  // number / boolean / null: edit the JSON literal directly.
+  // number / boolean / null: edit the JSON literal directly
   return (
     <input
       className="bf-input"
-      value={JSON.stringify(v)}
+      value={JSON.stringify(value)}
       onChange={(e) => {
-        const raw = e.target.value;
         try {
-          onValue(JSON.parse(raw));
+          onValue(JSON.parse(e.target.value));
         } catch {
-          onValue(raw);
+          onValue(e.target.value);
         }
       }}
     />
   );
+}
+
+function nextMeta(m?: FieldMeta): FieldMeta | undefined {
+  return m === undefined ? 'required' : m === 'required' ? 'optional' : undefined;
+}
+
+function metaLabel(m: FieldMeta | undefined, t: (k: string) => string): string {
+  return m === 'required'
+    ? t('req.fieldRequired')
+    : m === 'optional'
+      ? t('req.fieldOptional')
+      : t('req.fieldNeutral');
 }

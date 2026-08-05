@@ -324,11 +324,13 @@ const ko: Dict = {
   'req.viewFields': '필드',
   'req.fieldsInvalid': 'JSON을 구조화할 수 없습니다. Raw 뷰에서 수정하세요.',
   'req.fieldsEmpty': '필드가 없습니다. Raw 뷰에서 JSON을 입력하세요.',
-  'req.fieldsLegend': '체크 해제 = 전송 제외 · 배지 클릭 = 필수/선택 지정',
+  'req.fieldsLegend': '체크 해제 = 전송 제외 · 배지 = 필수/선택 · 키·값 직접 편집',
   'req.fieldRequired': '필수',
   'req.fieldOptional': '선택',
   'req.fieldNeutral': '—',
-  'req.fieldObjHint': '객체/배열은 Raw 뷰에서 관리하세요',
+  'req.fieldObjHint': '배열은 Raw 뷰에서 편집하세요',
+  'req.fieldAdd': '+ 필드',
+  'req.fieldArrHint': '배열은 Raw 뷰에서 편집',
 
   // history (extra)
   'hist.dblRename': '더블클릭: 이름변경',
@@ -632,11 +634,13 @@ const en: Dict = {
   'req.fieldsInvalid': 'Cannot structure this JSON. Edit it in the Raw view.',
   'req.fieldsEmpty': 'No fields. Enter JSON in the Raw view.',
   'req.fieldsLegend':
-    'Unchecked = excluded from the request · click a badge to set required/optional',
+    'Unchecked = excluded · badge = required/optional · edit keys and values inline',
   'req.fieldRequired': 'required',
   'req.fieldOptional': 'optional',
   'req.fieldNeutral': '—',
-  'req.fieldObjHint': 'Manage objects/arrays in the Raw view',
+  'req.fieldObjHint': 'Edit arrays in the Raw view',
+  'req.fieldAdd': '+ Field',
+  'req.fieldArrHint': 'Edit arrays in the Raw view',
 
   'hist.dblRename': 'Double-click: rename',
   'hist.moveToFolder': 'Move to folder',

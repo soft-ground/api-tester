@@ -1,118 +1,126 @@
 import { describe, it, expect } from 'vitest';
-import { parseBody, serializeBody, BodyField } from './jsoncFields';
+import {
+  BodyField,
+  parseBody,
+  serializeBody,
+  isPrimitive,
+  isArrayLeaf,
+} from './jsoncFields';
 import { stripJsonComments } from './jsonc';
 
 const sample = [
   '{',
   '  "Header": {',
-  '    "apiName": "createVirtualAccount",',
-  '    "apiKey": "{{apiKey}}"',
+  '    "apiName": "createVirtualAccount",   // required',
+  '    "apiKey": "{{apiKey}}",   // required',
+  '    "memo": "note"   // optional',
   '  },',
-  '  "mainAccountNo": "{{acct}}",   // required',
-  '  "depositorName": "name",',
-  '  "expectedAmount": "100000",   // optional',
-  '  "memo": "note"   // optional',
+  '  "virtualAccountId": "{{acct}}"   // required',
   '}',
 ].join('\n');
 
-describe('parseBody', () => {
-  it('models top-level fields with meta and nested object', () => {
+function field(fields: BodyField[], key: string) {
+  return fields.find((f) => f.key === key)!;
+}
+
+describe('parseBody (recursive)', () => {
+  it('parses nested object fields with per-level meta', () => {
     const { ok, fields } = parseBody(sample);
     expect(ok).toBe(true);
-    const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
-    expect(byKey.mainAccountNo.meta).toBe('required');
-    expect(byKey.expectedAmount.meta).toBe('optional');
-    expect(byKey.memo.meta).toBe('optional');
-    // nested object value preserved, no meta on object fields
-    expect(byKey.Header.value).toEqual({
-      apiName: 'createVirtualAccount',
-      apiKey: '{{apiKey}}',
-    });
-    expect(byKey.Header.meta).toBeUndefined();
-    // {{var}} preserved in string values
-    expect(byKey.mainAccountNo.value).toBe('{{acct}}');
+
+    const header = field(fields, 'Header');
+    expect(header.value.kind).toBe('object');
+
+    const hf = (header.value as any).fields as BodyField[];
+    expect(field(hf, 'apiName').meta).toBe('required');
+    expect(field(hf, 'apiKey').meta).toBe('required');
+    expect(field(hf, 'memo').meta).toBe('optional');
+    // nested {{var}} preserved
+    expect((field(hf, 'apiKey').value as any).value).toBe('{{apiKey}}');
+
+    const va = field(fields, 'virtualAccountId');
+    expect(va.meta).toBe('required');
+    expect((va.value as any).value).toBe('{{acct}}');
   });
 
   it('returns ok:false for a non-object body', () => {
     expect(parseBody('[1,2,3]').ok).toBe(false);
-    expect(parseBody('not json').ok).toBe(false);
+    expect(parseBody('nope').ok).toBe(false);
+  });
+
+  it('parses an empty body as no fields', () => {
+    expect(parseBody('').fields).toEqual([]);
+    expect(parseBody('{}').fields).toEqual([]);
   });
 });
 
-describe('round-trip', () => {
-  it('serialize -> parse is stable (idempotent structure)', () => {
+describe('round-trip (recursive)', () => {
+  it('serialize -> parse -> serialize is stable', () => {
     const first = parseBody(sample).fields;
-    const text = serializeBody(first);
-    const second = parseBody(text).fields;
-    expect(second.map((f) => [f.key, f.included, f.meta])).toEqual(
-      first.map((f) => [f.key, f.included, f.meta]),
-    );
-    // and serializing again yields identical text
-    expect(serializeBody(second)).toBe(text);
+    const text1 = serializeBody(first);
+    const text2 = serializeBody(parseBody(text1).fields);
+    expect(text2).toBe(text1);
   });
 
   it('serialized output is valid JSON once comments are stripped', () => {
     const text = serializeBody(parseBody(sample).fields);
-    expect(() => JSON.parse(stripJsonComments(text))).not.toThrow();
+    expect(JSON.parse(stripJsonComments(text))).toEqual({
+      Header: {
+        apiName: 'createVirtualAccount',
+        apiKey: '{{apiKey}}',
+        memo: 'note',
+      },
+      virtualAccountId: '{{acct}}',
+    });
   });
 });
 
-describe('include toggle (exclude an optional field)', () => {
-  it('excluded field is commented out and dropped from the sent JSON, but survives re-parse', () => {
-    const fields = parseBody(sample).fields.map((f) =>
+describe('nested exclude', () => {
+  it('excludes a nested optional field; it is dropped from the sent JSON but survives re-parse', () => {
+    const fields = parseBody(sample).fields;
+    const header = field(fields, 'Header');
+    const hf = (header.value as any).fields as BodyField[];
+    const nextHf = hf.map((f) =>
       f.key === 'memo' ? { ...f, included: false } : f,
     );
-    const text = serializeBody(fields);
-    // not sent
-    const sent = JSON.parse(stripJsonComments(text));
-    expect('memo' in sent).toBe(false);
-    expect(sent.mainAccountNo).toBe('{{acct}}');
-    // but still present in the structured view (as excluded), with value + meta intact
-    const memo = parseBody(text).fields.find((f) => f.key === 'memo');
-    expect(memo).toBeDefined();
-    expect(memo!.included).toBe(false);
-    expect(memo!.value).toBe('note');
-    expect(memo!.meta).toBe('optional');
-  });
+    const nextFields = fields.map((f) =>
+      f.key === 'Header' ? { ...f, value: { kind: 'object', fields: nextHf } } : f,
+    ) as BodyField[];
 
-  it('re-including an excluded field puts it back in the sent JSON', () => {
-    const excluded: BodyField = {
-      key: 'purpose',
-      value: 'PAYMENT',
-      included: false,
-      meta: 'optional',
-    };
-    const fields = [...parseBody(sample).fields, excluded];
-    const reincluded = fields.map((f) =>
-      f.key === 'purpose' ? { ...f, included: true } : f,
+    const text = serializeBody(nextFields);
+    const sent = JSON.parse(stripJsonComments(text));
+    expect('memo' in sent.Header).toBe(false);
+    expect(sent.Header.apiName).toBe('createVirtualAccount');
+
+    // re-parse: memo still present as an excluded field with its value/meta
+    const memo = field(
+      (field(parseBody(text).fields, 'Header').value as any).fields,
+      'memo',
     );
-    const sent = JSON.parse(stripJsonComments(serializeBody(reincluded)));
-    expect(sent.purpose).toBe('PAYMENT');
+    expect(memo.included).toBe(false);
+    expect((memo.value as any).value).toBe('note');
+    expect(memo.meta).toBe('optional');
   });
 });
 
-describe('value fidelity', () => {
-  it('keeps http:// and glob-like strings intact through a round-trip', () => {
-    const src = '{\n  "url": "http://x/a",\n  "glob": "src/**/*.ts"\n}';
-    const text = serializeBody(parseBody(src).fields);
-    expect(JSON.parse(stripJsonComments(text))).toEqual({
-      url: 'http://x/a',
-      glob: 'src/**/*.ts',
+describe('value shapes', () => {
+  it('keeps arrays as a leaf and non-string primitives typed', () => {
+    const src = '{\n  "tags": ["a", "b"],\n  "n": 42,\n  "ok": true\n}';
+    const fields = parseBody(src).fields;
+    expect(isArrayLeaf(field(fields, 'tags'))).toBe(true);
+    expect((field(fields, 'n').value as any).value).toBe(42);
+    expect(isPrimitive((field(fields, 'n').value as any).value)).toBe(true);
+    expect(JSON.parse(stripJsonComments(serializeBody(fields)))).toEqual({
+      tags: ['a', 'b'],
+      n: 42,
+      ok: true,
     });
   });
 
-  it('handles non-string primitives', () => {
-    const src = '{\n  "n": 42,   // required\n  "b": true,\n  "z": null\n}';
-    const f = parseBody(src).fields;
-    const byKey = Object.fromEntries(f.map((x) => [x.key, x]));
-    expect(byKey.n.value).toBe(42);
-    expect(byKey.n.meta).toBe('required');
-    expect(byKey.b.value).toBe(true);
-    expect(byKey.z.value).toBe(null);
-    expect(JSON.parse(stripJsonComments(serializeBody(f)))).toEqual({
-      n: 42,
-      b: true,
-      z: null,
-    });
+  it('preserves http:// and glob strings', () => {
+    const src = '{\n  "u": "http://x/a",\n  "g": "src/**/*.ts"\n}';
+    expect(JSON.parse(stripJsonComments(serializeBody(parseBody(src).fields)))).toEqual(
+      { u: 'http://x/a', g: 'src/**/*.ts' },
+    );
   });
 });
