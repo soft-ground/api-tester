@@ -953,8 +953,11 @@ textarea:focus {
   display: flex;
   flex-direction: column;
 }
-.bf-row.excluded > .bf-line {
+.bf-row.excluded {
   opacity: 0.5;
+}
+.bf-row.excluded .bf-row {
+  opacity: 1;
 }
 .bf-line {
   display: flex;
@@ -974,6 +977,18 @@ textarea:focus {
   color: var(--muted);
   cursor: pointer;
   font-size: 11px;
+}
+.bf-caret-spacer {
+  display: inline-block;
+  cursor: default;
+}
+.bf-index {
+  flex: none;
+  width: 20px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
 }
 .bf-keyedit {
   flex: none;

@@ -330,6 +330,7 @@ const ko: Dict = {
   'req.fieldNeutral': '—',
   'req.fieldObjHint': '배열은 Raw 뷰에서 편집하세요',
   'req.fieldAdd': '+ 필드',
+  'req.itemAdd': '+ 항목',
   'req.fieldArrHint': '배열은 Raw 뷰에서 편집',
 
   // history (extra)
@@ -640,6 +641,7 @@ const en: Dict = {
   'req.fieldNeutral': '—',
   'req.fieldObjHint': 'Edit arrays in the Raw view',
   'req.fieldAdd': '+ Field',
+  'req.itemAdd': '+ Item',
   'req.fieldArrHint': 'Edit arrays in the Raw view',
 
   'hist.dblRename': 'Double-click: rename',

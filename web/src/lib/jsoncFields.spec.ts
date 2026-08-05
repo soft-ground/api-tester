@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  BodyField,
-  parseBody,
-  serializeBody,
-  isPrimitive,
-  isArrayLeaf,
-} from './jsoncFields';
+import { BodyField, FieldValue, parseBody, serializeBody } from './jsoncFields';
 import { stripJsonComments } from './jsonc';
 
 const sample = [
@@ -19,52 +13,24 @@ const sample = [
   '}',
 ].join('\n');
 
-function field(fields: BodyField[], key: string) {
-  return fields.find((f) => f.key === key)!;
-}
+const f = (fields: BodyField[], key: string) => fields.find((x) => x.key === key)!;
+const objFields = (fv: FieldValue) => (fv as { kind: 'object'; fields: BodyField[] }).fields;
+const arrItems = (fv: FieldValue) => (fv as { kind: 'array'; items: FieldValue[] }).items;
+const leaf = (fv: FieldValue) => (fv as { kind: 'leaf'; value: unknown }).value;
+const sent = (text: string) => JSON.parse(stripJsonComments(text));
 
-describe('parseBody (recursive)', () => {
-  it('parses nested object fields with per-level meta', () => {
-    const { ok, fields } = parseBody(sample);
-    expect(ok).toBe(true);
+describe('parse + round-trip', () => {
+  it('parses nested fields with per-level meta and is stable', () => {
+    const fields = parseBody(sample).fields;
+    const hf = objFields(f(fields, 'Header').value);
+    expect(f(hf, 'apiName').meta).toBe('required');
+    expect(f(hf, 'memo').meta).toBe('optional');
+    expect(leaf(f(hf, 'apiKey').value)).toBe('{{apiKey}}');
 
-    const header = field(fields, 'Header');
-    expect(header.value.kind).toBe('object');
-
-    const hf = (header.value as any).fields as BodyField[];
-    expect(field(hf, 'apiName').meta).toBe('required');
-    expect(field(hf, 'apiKey').meta).toBe('required');
-    expect(field(hf, 'memo').meta).toBe('optional');
-    // nested {{var}} preserved
-    expect((field(hf, 'apiKey').value as any).value).toBe('{{apiKey}}');
-
-    const va = field(fields, 'virtualAccountId');
-    expect(va.meta).toBe('required');
-    expect((va.value as any).value).toBe('{{acct}}');
-  });
-
-  it('returns ok:false for a non-object body', () => {
-    expect(parseBody('[1,2,3]').ok).toBe(false);
-    expect(parseBody('nope').ok).toBe(false);
-  });
-
-  it('parses an empty body as no fields', () => {
-    expect(parseBody('').fields).toEqual([]);
-    expect(parseBody('{}').fields).toEqual([]);
-  });
-});
-
-describe('round-trip (recursive)', () => {
-  it('serialize -> parse -> serialize is stable', () => {
-    const first = parseBody(sample).fields;
-    const text1 = serializeBody(first);
+    const text1 = serializeBody(fields);
     const text2 = serializeBody(parseBody(text1).fields);
     expect(text2).toBe(text1);
-  });
-
-  it('serialized output is valid JSON once comments are stripped', () => {
-    const text = serializeBody(parseBody(sample).fields);
-    expect(JSON.parse(stripJsonComments(text))).toEqual({
+    expect(sent(text1)).toEqual({
       Header: {
         apiName: 'createVirtualAccount',
         apiKey: '{{apiKey}}',
@@ -73,54 +39,91 @@ describe('round-trip (recursive)', () => {
       virtualAccountId: '{{acct}}',
     });
   });
-});
 
-describe('nested exclude', () => {
-  it('excludes a nested optional field; it is dropped from the sent JSON but survives re-parse', () => {
-    const fields = parseBody(sample).fields;
-    const header = field(fields, 'Header');
-    const hf = (header.value as any).fields as BodyField[];
-    const nextHf = hf.map((f) =>
-      f.key === 'memo' ? { ...f, included: false } : f,
-    );
-    const nextFields = fields.map((f) =>
-      f.key === 'Header' ? { ...f, value: { kind: 'object', fields: nextHf } } : f,
-    ) as BodyField[];
-
-    const text = serializeBody(nextFields);
-    const sent = JSON.parse(stripJsonComments(text));
-    expect('memo' in sent.Header).toBe(false);
-    expect(sent.Header.apiName).toBe('createVirtualAccount');
-
-    // re-parse: memo still present as an excluded field with its value/meta
-    const memo = field(
-      (field(parseBody(text).fields, 'Header').value as any).fields,
-      'memo',
-    );
-    expect(memo.included).toBe(false);
-    expect((memo.value as any).value).toBe('note');
-    expect(memo.meta).toBe('optional');
+  it('ok:false for non-object bodies, empty for blank', () => {
+    expect(parseBody('[1,2]').ok).toBe(false);
+    expect(parseBody('nope').ok).toBe(false);
+    expect(parseBody('').fields).toEqual([]);
   });
 });
 
-describe('value shapes', () => {
-  it('keeps arrays as a leaf and non-string primitives typed', () => {
-    const src = '{\n  "tags": ["a", "b"],\n  "n": 42,\n  "ok": true\n}';
+describe('exclude a whole object (multi-line) round-trips', () => {
+  it('comments out the object, drops it from the sent JSON, and re-parses as excluded', () => {
+    const fields = parseBody(sample).fields.map((x) =>
+      x.key === 'Header' ? { ...x, included: false } : x,
+    );
+    const text = serializeBody(fields);
+    // dropped from the request
+    expect('Header' in sent(text)).toBe(false);
+    expect(sent(text)).toEqual({ virtualAccountId: '{{acct}}' });
+    // re-parses as an excluded object whose children (and their meta) survived
+    const re = parseBody(text).fields;
+    const header = f(re, 'Header');
+    expect(header.included).toBe(false);
+    expect(header.value.kind).toBe('object');
+    const hf = objFields(header.value);
+    expect(f(hf, 'apiName').meta).toBe('required');
+    expect(leaf(f(hf, 'apiKey').value)).toBe('{{apiKey}}');
+  });
+});
+
+describe('arrays are structural', () => {
+  const src = [
+    '{',
+    '  "students": [',
+    '    {',
+    '      "id": "1",   // required',
+    '      "nick": "a"   // optional',
+    '    },',
+    '    "raw-item"',
+    '  ],',
+    '  "count": 2',
+    '}',
+  ].join('\n');
+
+  it('parses array items (objects keep nested meta) and non-string primitives', () => {
     const fields = parseBody(src).fields;
-    expect(isArrayLeaf(field(fields, 'tags'))).toBe(true);
-    expect((field(fields, 'n').value as any).value).toBe(42);
-    expect(isPrimitive((field(fields, 'n').value as any).value)).toBe(true);
-    expect(JSON.parse(stripJsonComments(serializeBody(fields)))).toEqual({
-      tags: ['a', 'b'],
-      n: 42,
-      ok: true,
+    const students = f(fields, 'students');
+    expect(students.value.kind).toBe('array');
+    const items = arrItems(students.value);
+    expect(items).toHaveLength(2);
+    expect(items[0].kind).toBe('object');
+    expect(f(objFields(items[0]), 'id').meta).toBe('required');
+    expect(f(objFields(items[0]), 'nick').meta).toBe('optional');
+    expect(leaf(items[1])).toBe('raw-item');
+    expect(leaf(f(fields, 'count').value)).toBe(2);
+  });
+
+  it('round-trips arrays losslessly (including nested annotations)', () => {
+    const fields = parseBody(src).fields;
+    const text = serializeBody(fields);
+    expect(serializeBody(parseBody(text).fields)).toBe(text);
+    expect(sent(text)).toEqual({
+      students: [{ id: '1', nick: 'a' }, 'raw-item'],
+      count: 2,
     });
   });
 
-  it('preserves http:// and glob strings', () => {
-    const src = '{\n  "u": "http://x/a",\n  "g": "src/**/*.ts"\n}';
-    expect(JSON.parse(stripJsonComments(serializeBody(parseBody(src).fields)))).toEqual(
-      { u: 'http://x/a', g: 'src/**/*.ts' },
+  it('excluding a whole array removes it from the sent JSON but keeps it in the model', () => {
+    const fields = parseBody(src).fields.map((x) =>
+      x.key === 'students' ? { ...x, included: false } : x,
     );
+    const text = serializeBody(fields);
+    expect('students' in sent(text)).toBe(false);
+    const re = f(parseBody(text).fields, 'students');
+    expect(re.included).toBe(false);
+    expect(re.value.kind).toBe('array');
+    expect(arrItems(re.value)).toHaveLength(2);
+  });
+});
+
+describe('value fidelity', () => {
+  it('preserves http:// and glob strings, and {{var}} placeholders', () => {
+    const src = '{\n  "u": "http://x/a",\n  "g": "src/**/*.ts",\n  "v": "{{k}}"\n}';
+    expect(sent(serializeBody(parseBody(src).fields))).toEqual({
+      u: 'http://x/a',
+      g: 'src/**/*.ts',
+      v: '{{k}}',
+    });
   });
 });

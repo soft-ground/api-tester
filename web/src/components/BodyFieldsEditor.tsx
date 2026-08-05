@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 import {
   BodyField,
   FieldMeta,
-  isArrayLeaf,
+  FieldValue,
   isPrimitive,
   parseBody,
   serializeBody,
@@ -18,9 +18,9 @@ interface Props {
 }
 
 // Structured editor over the same JSONC body text (see lib/jsoncFields). Mounted only while the
-// Fields view is active, so it parses the current body once on mount and writes edits back as the
-// identical annotated format the Raw view uses. Objects expand recursively; keys and values are
-// editable; required/optional badge and the include toggle apply to primitive leaves.
+// Fields view is active: parses once on mount, writes edits back as the identical annotated format
+// the Raw view uses. Objects and arrays expand recursively; keys/values are editable; the include
+// toggle and required/optional badge apply per field (badge only on primitive leaves).
 export default function BodyFieldsEditor({ value, onChange, names }: Props) {
   const t = useT();
   const [initial] = useState(() => parseBody(value));
@@ -50,6 +50,10 @@ function uniqueKey(fields: BodyField[]): string {
   return `field${n}`;
 }
 
+const emptyLeaf = (): FieldValue => ({ kind: 'leaf', value: '' });
+
+/* ----------------------------- object fields ----------------------------- */
+
 function FieldList({
   fields,
   depth,
@@ -62,16 +66,6 @@ function FieldList({
   onChange: (f: BodyField[]) => void;
 }) {
   const t = useT();
-  const setAt = (i: number, f: BodyField) =>
-    onChange(fields.map((x, idx) => (idx === i ? f : x)));
-  const removeAt = (i: number) =>
-    onChange(fields.filter((_, idx) => idx !== i));
-  const add = () =>
-    onChange([
-      ...fields,
-      { key: uniqueKey(fields), value: { kind: 'leaf', value: '' }, included: true },
-    ]);
-
   return (
     <div className="bf-list" style={depth ? { marginLeft: 16 } : undefined}>
       {fields.map((f, i) => (
@@ -80,11 +74,20 @@ function FieldList({
           field={f}
           depth={depth}
           names={names}
-          onChange={(nf) => setAt(i, nf)}
-          onRemove={() => removeAt(i)}
+          onChange={(nf) => onChange(fields.map((x, idx) => (idx === i ? nf : x)))}
+          onRemove={() => onChange(fields.filter((_, idx) => idx !== i))}
         />
       ))}
-      <button type="button" className="bf-add" onClick={add}>
+      <button
+        type="button"
+        className="bf-add"
+        onClick={() =>
+          onChange([
+            ...fields,
+            { key: uniqueKey(fields), value: emptyLeaf(), included: true },
+          ])
+        }
+      >
         {t('req.fieldAdd')}
       </button>
     </div>
@@ -106,31 +109,25 @@ function FieldRow({
 }) {
   const t = useT();
   const [open, setOpen] = useState(true);
-
-  const isObj = field.value.kind === 'object';
-  const isArr = isArrayLeaf(field);
-  const isPrim = field.value.kind === 'leaf' && isPrimitive(field.value.value);
+  const kind = field.value.kind;
+  const expandable = kind === 'object' || kind === 'array';
+  const isPrim = kind === 'leaf' && isPrimitive(field.value.value);
 
   return (
     <div className={`bf-row${field.included ? '' : ' excluded'}`}>
       <div className="bf-line">
-        {isObj ? (
-          <button
-            type="button"
-            className="bf-caret"
-            onClick={() => setOpen((o) => !o)}
-          >
+        <input
+          type="checkbox"
+          className="bf-check"
+          checked={field.included}
+          onChange={(e) => onChange({ ...field, included: e.target.checked })}
+        />
+        {expandable ? (
+          <button type="button" className="bf-caret" onClick={() => setOpen((o) => !o)}>
             {open ? '▾' : '▸'}
           </button>
         ) : (
-          <input
-            type="checkbox"
-            className="bf-check"
-            checked={field.included}
-            disabled={!isPrim}
-            title={isPrim ? '' : t('req.fieldArrHint')}
-            onChange={(e) => onChange({ ...field, included: e.target.checked })}
-          />
+          <span className="bf-caret bf-caret-spacer" />
         )}
 
         <input
@@ -149,44 +146,155 @@ function FieldRow({
             {metaLabel(field.meta, t)}
           </button>
         ) : (
-          <span className="bf-badge bf-obj">{isArr ? '[ ]' : '{ }'}</span>
+          <span className="bf-badge bf-obj">{kind === 'array' ? '[ ]' : '{ }'}</span>
         )}
 
         <div className="bf-value">
-          {isObj ? (
-            <span className="bf-obj-hint">{`{ ${(field.value as any).fields.length} }`}</span>
+          {kind === 'object' ? (
+            <span className="bf-obj-hint">{`{ ${field.value.fields.length} }`}</span>
+          ) : kind === 'array' ? (
+            <span className="bf-obj-hint">{`[ ${field.value.items.length} ]`}</span>
           ) : (
             <LeafInput
-              value={(field.value as any).value}
+              value={field.value.value}
               names={names}
               onValue={(v) => onChange({ ...field, value: { kind: 'leaf', value: v } })}
             />
           )}
         </div>
 
-        <button
-          type="button"
-          className="bf-del"
-          title={t('common.delete')}
-          onClick={onRemove}
-        >
+        <button type="button" className="bf-del" title={t('common.delete')} onClick={onRemove}>
           ✕
         </button>
       </div>
 
-      {isObj && open && (
+      {open && kind === 'object' && (
         <FieldList
-          fields={(field.value as any).fields}
+          fields={field.value.fields}
           depth={depth + 1}
           names={names}
-          onChange={(cf) =>
-            onChange({ ...field, value: { kind: 'object', fields: cf } })
-          }
+          onChange={(cf) => onChange({ ...field, value: { kind: 'object', fields: cf } })}
+        />
+      )}
+      {open && kind === 'array' && (
+        <ItemList
+          items={field.value.items}
+          depth={depth + 1}
+          names={names}
+          onChange={(items) => onChange({ ...field, value: { kind: 'array', items } })}
         />
       )}
     </div>
   );
 }
+
+/* ----------------------------- array items ----------------------------- */
+
+function ItemList({
+  items,
+  depth,
+  names,
+  onChange,
+}: {
+  items: FieldValue[];
+  depth: number;
+  names: VarName[];
+  onChange: (items: FieldValue[]) => void;
+}) {
+  const t = useT();
+  return (
+    <div className="bf-list" style={{ marginLeft: 16 }}>
+      {items.map((it, i) => (
+        <ItemRow
+          key={i}
+          item={it}
+          index={i}
+          depth={depth}
+          names={names}
+          onChange={(nv) => onChange(items.map((x, idx) => (idx === i ? nv : x)))}
+          onRemove={() => onChange(items.filter((_, idx) => idx !== i))}
+        />
+      ))}
+      <button
+        type="button"
+        className="bf-add"
+        onClick={() => onChange([...items, emptyLeaf()])}
+      >
+        {t('req.itemAdd')}
+      </button>
+    </div>
+  );
+}
+
+function ItemRow({
+  item,
+  index,
+  depth,
+  names,
+  onChange,
+  onRemove,
+}: {
+  item: FieldValue;
+  index: number;
+  depth: number;
+  names: VarName[];
+  onChange: (v: FieldValue) => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  const [open, setOpen] = useState(true);
+  const kind = item.kind;
+  const expandable = kind === 'object' || kind === 'array';
+
+  return (
+    <div className="bf-row">
+      <div className="bf-line">
+        <span className="bf-index">{index}</span>
+        {expandable ? (
+          <button type="button" className="bf-caret" onClick={() => setOpen((o) => !o)}>
+            {open ? '▾' : '▸'}
+          </button>
+        ) : (
+          <span className="bf-caret bf-caret-spacer" />
+        )}
+        <div className="bf-value">
+          {kind === 'object' ? (
+            <span className="bf-obj-hint">{`{ ${item.fields.length} }`}</span>
+          ) : kind === 'array' ? (
+            <span className="bf-obj-hint">{`[ ${item.items.length} ]`}</span>
+          ) : (
+            <LeafInput
+              value={item.value}
+              names={names}
+              onValue={(v) => onChange({ kind: 'leaf', value: v })}
+            />
+          )}
+        </div>
+        <button type="button" className="bf-del" title={t('common.delete')} onClick={onRemove}>
+          ✕
+        </button>
+      </div>
+      {open && kind === 'object' && (
+        <FieldList
+          fields={item.fields}
+          depth={depth + 1}
+          names={names}
+          onChange={(cf) => onChange({ kind: 'object', fields: cf })}
+        />
+      )}
+      {open && kind === 'array' && (
+        <ItemList
+          items={item.items}
+          depth={depth + 1}
+          names={names}
+          onChange={(items) => onChange({ kind: 'array', items })}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ----------------------------- leaf value ----------------------------- */
 
 function LeafInput({
   value,
@@ -197,7 +305,6 @@ function LeafInput({
   names: VarName[];
   onValue: (v: unknown) => void;
 }) {
-  const t = useT();
   if (typeof value === 'string') {
     return (
       <VarField
@@ -206,14 +313,6 @@ function LeafInput({
         names={names}
         onChange={(nv) => onValue(nv)}
       />
-    );
-  }
-  if (value !== null && typeof value === 'object') {
-    // arrays: read-only preview, edit in Raw
-    return (
-      <code className="bf-obj-preview" title={t('req.fieldArrHint')}>
-        {JSON.stringify(value)}
-      </code>
     );
   }
   // number / boolean / null: edit the JSON literal directly
