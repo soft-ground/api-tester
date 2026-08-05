@@ -934,13 +934,13 @@ textarea:focus {
 .body-fields {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: var(--panel);
 }
 .bf-legend {
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .bf-notice {
   font-size: 13px;
@@ -962,8 +962,8 @@ textarea:focus {
 .bf-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 0;
+  gap: 6px;
+  padding: 1px 0;
 }
 .bf-check {
   flex: none;
@@ -995,7 +995,8 @@ textarea:focus {
   width: 150px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
-  padding: 2px 6px;
+  line-height: 1.35;
+  padding: 1px 6px;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
@@ -1009,8 +1010,8 @@ textarea:focus {
 }
 .bf-add {
   align-self: flex-start;
-  margin-top: 2px;
-  padding: 2px 8px;
+  margin-top: 1px;
+  padding: 1px 8px;
   font-size: 12px;
   border: 1px dashed var(--border);
   background: transparent;
@@ -1065,6 +1066,9 @@ textarea:focus {
 }
 .bf-input {
   width: 100%;
+  padding: 2px 6px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 .bf-obj-preview {
   display: block;
