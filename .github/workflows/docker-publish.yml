@@ -1,0 +1,53 @@
+name: Publish images
+
+# Builds and pushes the server / web / test-api images to GitHub Container Registry (GHCR)
+# whenever a version tag (v*) is pushed. No registry secrets needed — GITHUB_TOKEN is used.
+# After the first publish, make the packages public in the repo's Packages settings (one time).
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: server
+            context: ./server
+          - service: web
+            context: ./web
+          - service: test-api
+            context: ./test-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/api-tester-${{ matrix.service }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

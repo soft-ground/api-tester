@@ -1,0 +1,67 @@
+# Run API Tester from prebuilt images (no local build required).
+#
+#   cp .env.example .env         # set POSTGRES_* (edit passwords if you like)
+#   docker compose -f docker-compose.ghcr.yml up -d
+#
+# Images are published to GHCR on each release. Pin a specific version by replacing
+# ":latest" with ":1.3.0" if you prefer reproducible deployments.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: api-tester-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "8473:5432" # host 8473 -> container 5432 (for a DB GUI client)
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  server:
+    image: ghcr.io/soft-ground/api-tester-server:latest
+    container_name: api-tester-server
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      PORT: 3000
+      NODE_ENV: production
+      TZ: Asia/Seoul # server local time (for now(), etc.) as KST
+    ports:
+      - "8472:3000" # host 8472 -> container 3000 (to inspect the API directly)
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/soft-ground/api-tester-web:latest
+    container_name: api-tester-web
+    restart: unless-stopped
+    ports:
+      - "8471:80" # host 8471 -> container 80 (browser access)
+    depends_on:
+      - server
+
+  # Local upload/echo test API (opt-in). Not started by default; runs only with --profile test.
+  test-api:
+    image: ghcr.io/soft-ground/api-tester-test-api:latest
+    container_name: api-tester-test-api
+    restart: unless-stopped
+    profiles: ["test"]
+    environment:
+      PORT: 3000
+      UPLOAD_DIR: /data/uploads
+    ports:
+      - "8474:3000" # host 8474 -> container 3000 (to inspect upload results directly)
+    volumes:
+      - test-uploads:/data/uploads
+
+volumes:
+  db-data:
+  test-uploads:
