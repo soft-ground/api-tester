@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { VarName } from '../api/client';
 import { useT } from '../i18n';
 import {
@@ -23,22 +23,33 @@ interface Props {
 // toggle and required/optional badge apply per field (badge only on primitive leaves).
 export default function BodyFieldsEditor({ value, onChange, names }: Props) {
   const t = useT();
-  const [initial] = useState(() => parseBody(value));
-  const [fields, setFields] = useState<BodyField[]>(initial.fields);
+  const [state, setState] = useState(() => parseBody(value));
+  const lastText = useRef(value);
 
-  if (!initial.ok) {
+  // Re-sync when the body changes externally (e.g. the Reload/revert button resets it), while
+  // ignoring the echo of our own edits: after we emit, `value` comes back equal to lastText.
+  useEffect(() => {
+    if (value !== lastText.current) {
+      lastText.current = value;
+      setState(parseBody(value));
+    }
+  }, [value]);
+
+  if (!state.ok) {
     return <div className="bf-notice">{t('req.fieldsInvalid')}</div>;
   }
 
   const commit = (next: BodyField[]) => {
-    setFields(next);
-    onChange(serializeBody(next));
+    const text = serializeBody(next);
+    lastText.current = text;
+    setState({ ok: true, fields: next });
+    onChange(text);
   };
 
   return (
     <div className="body-fields">
       <div className="bf-legend">{t('req.fieldsLegend')}</div>
-      <FieldList fields={fields} depth={0} names={names} onChange={commit} />
+      <FieldList fields={state.fields} depth={0} names={names} onChange={commit} />
     </div>
   );
 }
