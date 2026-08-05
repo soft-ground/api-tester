@@ -1039,10 +1039,13 @@ textarea:focus {
 }
 .bf-badge {
   flex: none;
-  min-width: 52px;
+  width: 62px;
+  box-sizing: border-box;
   padding: 1px 8px;
   font-size: 11px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
