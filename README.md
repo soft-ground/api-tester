@@ -263,7 +263,8 @@ docker compose up -d db      # DB in Docker only
 # Backend (terminal 1)
 cd server && npm install
 # DATABASE_URL example: postgresql://apitester:change_me@localhost:8473/apitester?schema=public
-npm run prisma:generate && npm run prisma:push
+npm run prisma:generate
+npx prisma migrate deploy    # apply migrations to the DB
 npm run start:dev            # http://localhost:3000
 
 # Frontend (terminal 2)
@@ -273,6 +274,24 @@ npm run dev                  # http://localhost:5173 (proxies /api to the Docker
 
 If you run the backend locally on port 3000, adjust the proxy target in
 [web/vite.config.ts](./web/vite.config.ts).
+
+### Database migrations
+
+The schema is managed with **Prisma Migrate**. Migration files live in
+[`server/prisma/migrations/`](./server/prisma/migrations) and are applied automatically when the
+server container starts (`migrate deploy`). A database first created with `db push` by an older
+image is **baselined automatically on upgrade** — the initial migration is marked as applied without
+recreating tables, so existing data is never dropped.
+
+To change the schema, edit [`server/prisma/schema.prisma`](./server/prisma/schema.prisma) and create
+a migration:
+
+```bash
+cd server
+npm run prisma:migrate       # prisma migrate dev: creates a new migration and applies it
+```
+
+Commit the generated folder under `server/prisma/migrations/` along with the schema change.
 
 ### Tests
 
