@@ -395,6 +395,18 @@ function VariableRulesSection() {
 
               <RuleConfigEditor rule={selected} onChange={patchCfg} />
 
+              <label className="rule-peruse">
+                <input
+                  type="checkbox"
+                  checked={!!(selected.config as any)?.perUse}
+                  onChange={(e) => patchCfg({ perUse: e.target.checked })}
+                />
+                <span>
+                  {t('env.rule.perUse')}
+                  <em>{t('env.rule.perUseHint')}</em>
+                </span>
+              </label>
+
               <div className="rule-actions">
                 <button className="btn" onClick={save}>
                   {t('common.save')}

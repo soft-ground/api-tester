@@ -1554,6 +1554,26 @@ textarea:focus {
   gap: 8px;
   flex-wrap: wrap;
 }
+.rule-peruse {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.rule-peruse input {
+  margin-top: 3px;
+  flex: none;
+}
+.rule-peruse em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
 .preview-val {
   font-family: 'Consolas', 'Menlo', monospace;
   font-size: 13px;

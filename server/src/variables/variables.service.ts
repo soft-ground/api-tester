@@ -17,6 +17,13 @@ import { evalExpression, resolveSimpleRule, RuleLike } from './engine';
 // Variable names: allow Unicode letters (Korean, etc.) + digits + _ . -
 const VAR_PATTERN = /\{\{\s*([\p{L}\p{N}_.\-]+)\s*\}\}/gu;
 
+interface ResolvedContext {
+  ctx: Record<string, string>;
+  // Per-use rule values, one array per rule name (consumed per occurrence by makeSubstituter).
+  ctxLists: Record<string, string[]>;
+  errors: Record<string, string>;
+}
+
 // In-process async mutex: runs the given tasks one at a time, in sequence.
 // Serializes read-modify-write of state (sequence increment, shared/active variable updates)
 // to prevent duplicate values / lost increments under concurrent requests. The server is a single process,
@@ -299,24 +306,28 @@ export class VariablesService {
   async resolveContext(
     persist: boolean,
     envVars?: Record<string, string>,
-  ): Promise<{ ctx: Record<string, string>; errors: Record<string, string> }> {
+    occ?: Record<string, number>,
+  ): Promise<ResolvedContext> {
     // persist=true increments/saves sequence state, so serialize with a mutex (under concurrent
     // requests, this prevents duplicate values / lost increments). persist=false (preview, etc.) has no writes, so no lock.
     return persist
       ? this.stateMutex.runExclusive(() =>
-          this.resolveContextInner(true, envVars),
+          this.resolveContextInner(true, envVars, occ),
         )
-      : this.resolveContextInner(false, envVars);
+      : this.resolveContextInner(false, envVars, occ);
   }
 
   private async resolveContextInner(
     persist: boolean,
     envVars?: Record<string, string>,
-  ): Promise<{ ctx: Record<string, string>; errors: Record<string, string> }> {
+    occ?: Record<string, number>,
+  ): Promise<ResolvedContext> {
     const env = envVars ?? (await this.getActiveEnvVariables());
     const shared = await this.getSharedVariables();
     // Priority: rules > active environment > shared group
     const ctx: Record<string, string> = { ...shared, ...env };
+    // Per-use rules produce a fresh value for each occurrence in the request (see makeSubstituter).
+    const ctxLists: Record<string, string[]> = {};
     const errors: Record<string, string> = {};
 
     const rules = await this.prisma.variableRule.findMany();
@@ -328,29 +339,64 @@ export class VariablesService {
         expressions.push(rule as unknown as RuleLike);
         continue;
       }
-      const { value, nextState } = resolveSimpleRule(
-        rule as unknown as RuleLike,
-      );
-      ctx[rule.name] = value;
-      if (persist && nextState) {
-        await this.prisma.variableRule.update({
-          where: { id: rule.id },
-          data: { state: nextState as Prisma.InputJsonValue },
-        });
+      const perUse = !!(rule.config as any)?.perUse;
+      const count = occ?.[rule.name] ?? 0;
+      if (perUse && count > 1) {
+        // Regenerate for each occurrence, threading (and persisting) the rule state once.
+        let state = (rule as any).state;
+        let changed = false;
+        const list: string[] = [];
+        for (let i = 0; i < count; i++) {
+          const { value, nextState } = resolveSimpleRule({
+            ...(rule as unknown as RuleLike),
+            state,
+          });
+          list.push(value);
+          if (nextState) {
+            state = nextState;
+            changed = true;
+          }
+        }
+        ctxLists[rule.name] = list;
+        if (persist && changed) {
+          await this.prisma.variableRule.update({
+            where: { id: rule.id },
+            data: { state: state as Prisma.InputJsonValue },
+          });
+        }
+      } else {
+        const { value, nextState } = resolveSimpleRule(
+          rule as unknown as RuleLike,
+        );
+        ctx[rule.name] = value;
+        if (persist && nextState) {
+          await this.prisma.variableRule.update({
+            where: { id: rule.id },
+            data: { state: nextState as Prisma.InputJsonValue },
+          });
+        }
       }
     }
 
     // Step 2: evaluate expressions using the previously built context as scope.
     // On failure, do not add to ctx so {{name}} stays unresolved and the request is blocked.
     for (const rule of expressions) {
+      const perUse = !!((rule as any).config)?.perUse;
+      const count = occ?.[rule.name] ?? 0;
       try {
-        ctx[rule.name] = evalExpression(rule.config?.expr ?? '', ctx);
+        if (perUse && count > 1) {
+          ctxLists[rule.name] = Array.from({ length: count }, () =>
+            evalExpression((rule as any).config?.expr ?? '', ctx),
+          );
+        } else {
+          ctx[rule.name] = evalExpression((rule as any).config?.expr ?? '', ctx);
+        }
       } catch (e: any) {
         errors[rule.name] = e?.message ?? String(e);
       }
     }
 
-    return { ctx, errors };
+    return { ctx, ctxLists, errors };
   }
 
   // Substitute {{name}} in a string with context values (undefined ones are left unchanged)
@@ -359,6 +405,28 @@ export class VariablesService {
     return text.replace(VAR_PATTERN, (whole, name) =>
       ctx[name] !== undefined ? ctx[name] : whole,
     );
+  }
+
+  // Like substituteText, but a per-use rule (present in ctxLists) consumes a fresh value for each
+  // {{name}} occurrence across the whole request (the returned function keeps a shared cursor).
+  // Values in ctx are reused for every occurrence (request-consistent, the default).
+  makeSubstituter(
+    ctx: Record<string, string>,
+    ctxLists: Record<string, string[]> = {},
+  ): (text?: string | null) => string | null | undefined {
+    const cursors: Record<string, number> = {};
+    return (text) => {
+      if (!text) return text;
+      return text.replace(VAR_PATTERN, (whole, name) => {
+        const list = ctxLists[name];
+        if (list && list.length) {
+          const i = cursors[name] ?? 0;
+          cursors[name] = i + 1;
+          return i < list.length ? list[i] : list[list.length - 1];
+        }
+        return ctx[name] !== undefined ? ctx[name] : whole;
+      });
+    };
   }
 
   hasPlaceholder(text: string | undefined | null): boolean {

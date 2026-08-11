@@ -360,10 +360,18 @@ export class ExecutorService {
 
     // If placeholders exist, evaluate rules too (sequence increment); otherwise use env variables only
     let ctx: Record<string, string>;
+    let ctxLists: Record<string, string[]> = {};
     let errors: Record<string, string> = {};
     if (hasVars) {
-      const resolved = await this.vars.resolveContext(true);
+      // Count each {{name}} occurrence so per-use rules can produce a fresh value per occurrence.
+      const occ: Record<string, number> = {};
+      const re = /\{\{\s*([\p{L}\p{N}_.\-]+)\s*\}\}/gu;
+      for (const t of texts) {
+        for (const m of t.matchAll(re)) occ[m[1]] = (occ[m[1]] ?? 0) + 1;
+      }
+      const resolved = await this.vars.resolveContext(true, undefined, occ);
       ctx = resolved.ctx;
+      ctxLists = resolved.ctxLists;
       errors = resolved.errors;
     } else {
       ctx = await this.vars.getActiveEnvVariables();
@@ -371,8 +379,8 @@ export class ExecutorService {
     // The scenario run context (extracts) overrides with the highest priority
     if (extraContext) ctx = { ...ctx, ...extraContext };
 
-    const sub = (t?: string | null) =>
-      t == null ? t : this.vars.substituteText(t, ctx);
+    // Per-use rules consume a fresh value per occurrence via this stateful substituter.
+    const sub = this.vars.makeSubstituter(ctx, ctxLists);
 
     let url = sub(dto.url) ?? '';
     // If the URL is relative (no baseUrl), prepend the active environment baseUrl

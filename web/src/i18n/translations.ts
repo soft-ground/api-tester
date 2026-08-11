@@ -284,6 +284,8 @@ const ko: Dict = {
   'env.rule.length': '길이',
   'env.rule.min': '최소',
   'env.rule.max': '최대',
+  'env.rule.perUse': '매 사용마다 새 값 생성',
+  'env.rule.perUseHint': '한 요청에서 여러 번 쓰이면 각각 다른 값 (예: 유니크 거래번호). 끄면 요청당 동일 값.',
 
   // collections (import backup)
   'col.importDone':
@@ -599,6 +601,8 @@ const en: Dict = {
   'env.rule.length': 'Length',
   'env.rule.min': 'Min',
   'env.rule.max': 'Max',
+  'env.rule.perUse': 'New value on each use',
+  'env.rule.perUseHint': 'Each occurrence in one request gets a distinct value (e.g. a unique transaction no). Off = one value per request.',
 
   'col.importDone':
     'Import complete — collections +{colAdded} (merged {colMerged}), APIs +{epAdded} (skipped {epSkipped}), environments +{envAdded} (skipped {envSkipped}), variables +{varAdded} (skipped {varSkipped})',
