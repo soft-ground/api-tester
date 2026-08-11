@@ -5,7 +5,6 @@ import {
   BodyField,
   FieldMeta,
   FieldValue,
-  isPrimitive,
   parseBody,
   serializeBody,
 } from '../lib/jsoncFields';
@@ -122,7 +121,6 @@ function FieldRow({
   const [open, setOpen] = useState(true);
   const kind = field.value.kind;
   const expandable = kind === 'object' || kind === 'array';
-  const isPrim = kind === 'leaf' && isPrimitive(field.value.value);
 
   return (
     <div className={`bf-row${field.included ? '' : ' excluded'}`}>
@@ -148,20 +146,20 @@ function FieldRow({
           onChange={(e) => onChange({ ...field, key: e.target.value })}
         />
 
-        {isPrim ? (
-          <button
-            type="button"
-            className={`bf-badge bf-${field.meta ?? 'none'}`}
-            onClick={() => onChange({ ...field, meta: nextMeta(field.meta) })}
-          >
-            {metaLabel(field.meta, t)}
-          </button>
-        ) : (
-          <span className="bf-badge bf-obj">{kind === 'array' ? '[ ]' : '{ }'}</span>
-        )}
+        <button
+          type="button"
+          className={`bf-badge bf-${field.meta ?? 'none'}`}
+          onClick={() => onChange({ ...field, meta: nextMeta(field.meta) })}
+        >
+          {metaLabel(field.meta, t)}
+        </button>
 
         <div className="bf-value">
-          {kind === 'leaf' && (
+          {kind === 'object' ? (
+            <span className="bf-obj-hint">{'{ }'}</span>
+          ) : kind === 'array' ? (
+            <span className="bf-obj-hint">{'[ ]'}</span>
+          ) : (
             <LeafInput
               value={field.value.value}
               names={names}
@@ -303,6 +301,17 @@ function ItemRow({
 
 /* ----------------------------- leaf value ----------------------------- */
 
+type LeafType = 'string' | 'number' | 'boolean' | 'null';
+
+function leafTypeOf(v: unknown): LeafType {
+  if (v === null) return 'null';
+  if (typeof v === 'number') return 'number';
+  if (typeof v === 'boolean') return 'boolean';
+  return 'string';
+}
+
+// A leaf value carries its JSON type, so the picker lets the user send an unquoted number/boolean/
+// null instead of everything becoming a quoted string. Switching type coerces the current value.
 function LeafInput({
   value,
   names,
@@ -312,26 +321,85 @@ function LeafInput({
   names: VarName[];
   onValue: (v: unknown) => void;
 }) {
-  if (typeof value === 'string') {
-    return (
-      <VarField
-        className="bf-input"
-        value={value}
-        names={names}
-        onChange={(nv) => onValue(nv)}
-      />
-    );
-  }
-  // number / boolean / null: edit the JSON literal directly
+  const t = useT();
+  const type = leafTypeOf(value);
+
+  const changeType = (nt: LeafType) => {
+    if (nt === type) return;
+    if (nt === 'string') onValue(value === null ? '' : String(value));
+    else if (nt === 'number') {
+      const n = Number(value);
+      onValue(Number.isFinite(n) ? n : 0);
+    } else if (nt === 'boolean') onValue(value === true || value === 'true' || value === 1);
+    else onValue(null);
+  };
+
+  return (
+    <div className="bf-leaf">
+      {type === 'string' ? (
+        <VarField
+          className="bf-input"
+          value={value as string}
+          names={names}
+          onChange={(nv) => onValue(nv)}
+        />
+      ) : type === 'number' ? (
+        <NumberLeaf value={value as number} onValue={onValue} />
+      ) : type === 'boolean' ? (
+        <select
+          className="bf-input bf-bool"
+          value={String(value)}
+          onChange={(e) => onValue(e.target.value === 'true')}
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      ) : (
+        <span className="bf-nullval">null</span>
+      )}
+      <select
+        className="bf-type"
+        title={t('req.fieldType')}
+        value={type}
+        onChange={(e) => changeType(e.target.value as LeafType)}
+      >
+        <option value="string">&quot; &quot;</option>
+        <option value="number">123</option>
+        <option value="boolean">T/F</option>
+        <option value="null">null</option>
+      </select>
+    </div>
+  );
+}
+
+// Numeric leaf with a local text buffer, so intermediate states ("-", "1.", "1e") can be typed
+// without the model coercing them away mid-keystroke.
+function NumberLeaf({ value, onValue }: { value: number; onValue: (v: unknown) => void }) {
+  const [raw, setRaw] = useState(() => String(value));
+  const emitted = useRef(value);
+  useEffect(() => {
+    if (value !== emitted.current) {
+      emitted.current = value;
+      setRaw(String(value));
+    }
+  }, [value]);
   return (
     <input
       className="bf-input"
-      value={JSON.stringify(value)}
+      inputMode="decimal"
+      value={raw}
       onChange={(e) => {
-        try {
-          onValue(JSON.parse(e.target.value));
-        } catch {
-          onValue(e.target.value);
+        const s = e.target.value;
+        setRaw(s);
+        if (s.trim() === '') {
+          emitted.current = 0;
+          onValue(0);
+          return;
+        }
+        const n = Number(s);
+        if (Number.isFinite(n)) {
+          emitted.current = n;
+          onValue(n);
         }
       }}
     />

@@ -117,6 +117,72 @@ describe('arrays are structural', () => {
   });
 });
 
+describe('trailing comments beyond required/optional', () => {
+  it('keeps free-text notes next to the meta token and preserves them when meta changes', () => {
+    const src = [
+      '{',
+      '  "a": "1",   // required account holder',
+      '  "b": "2",   // just a note',
+      '  "c": "3"   // optional (nullable)',
+      '}',
+    ].join('\n');
+    const fields = parseBody(src).fields;
+    expect(f(fields, 'a').meta).toBe('required');
+    expect(f(fields, 'a').comment).toBe('account holder');
+    expect(f(fields, 'b').meta).toBeUndefined();
+    expect(f(fields, 'b').comment).toBe('just a note');
+    expect(f(fields, 'c').meta).toBe('optional');
+    expect(f(fields, 'c').comment).toBe('(nullable)');
+
+    const text = serializeBody(fields);
+    expect(serializeBody(parseBody(text).fields)).toBe(text);
+
+    // toggling the badge on a free-comment field must not discard the note
+    const toggled = fields.map((x) => (x.key === 'b' ? { ...x, meta: 'required' as const } : x));
+    const re = f(parseBody(serializeBody(toggled)).fields, 'b');
+    expect(re.meta).toBe('required');
+    expect(re.comment).toBe('just a note');
+  });
+});
+
+describe('meta on object and array fields', () => {
+  it('serializes required/optional after the closing brace/bracket and round-trips', () => {
+    const fields: BodyField[] = [
+      {
+        key: 'obj',
+        included: true,
+        meta: 'required',
+        value: { kind: 'object', fields: [{ key: 'x', included: true, value: { kind: 'leaf', value: '1' } }] },
+      },
+      {
+        key: 'arr',
+        included: true,
+        meta: 'optional',
+        comment: 'list of ids',
+        value: { kind: 'array', items: [{ kind: 'leaf', value: '1' }] },
+      },
+    ];
+    const text = serializeBody(fields);
+    const re = parseBody(text).fields;
+    expect(f(re, 'obj').meta).toBe('required');
+    expect(f(re, 'arr').meta).toBe('optional');
+    expect(f(re, 'arr').comment).toBe('list of ids');
+    expect(serializeBody(re)).toBe(text);
+    expect(sent(text)).toEqual({ obj: { x: '1' }, arr: ['1'] });
+  });
+});
+
+describe('leaf value types', () => {
+  it('round-trips unquoted number / boolean / null literals', () => {
+    const src = '{\n  "n": 42,\n  "b": true,\n  "z": null,\n  "s": "text"\n}';
+    const fields = parseBody(src).fields;
+    expect(leaf(f(fields, 'n').value)).toBe(42);
+    expect(leaf(f(fields, 'b').value)).toBe(true);
+    expect(leaf(f(fields, 'z').value)).toBe(null);
+    expect(sent(serializeBody(fields))).toEqual({ n: 42, b: true, z: null, s: 'text' });
+  });
+});
+
 describe('value fidelity', () => {
   it('preserves http:// and glob strings, and {{var}} placeholders', () => {
     const src = '{\n  "u": "http://x/a",\n  "g": "src/**/*.ts",\n  "v": "{{k}}"\n}';

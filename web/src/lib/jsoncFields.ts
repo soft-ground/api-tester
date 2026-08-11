@@ -30,7 +30,8 @@ export interface BodyField {
   key: string;
   value: FieldValue;
   included: boolean; // false => serialized as a commented-out block (not sent)
-  meta?: FieldMeta; // trailing // required | // optional (primitive leaves only)
+  meta?: FieldMeta; // required | optional token parsed from the trailing // comment
+  comment?: string; // any remaining free text of the trailing // comment (preserved verbatim)
 }
 
 export interface ParsedBody {
@@ -117,16 +118,32 @@ function parseValue(p: Scan): FieldValue {
   return { kind: 'leaf', value: JSON.parse(p.s.slice(start, p.i)) };
 }
 
-function readTrailingMeta(p: Scan): FieldMeta | undefined {
+interface TrailingComment {
+  meta?: FieldMeta;
+  comment?: string;
+}
+
+// Split a raw trailing-comment body into an optional required/optional token and the remaining
+// free text, so a user's own note (e.g. "// required account holder") is never discarded when the
+// badge is toggled — meta is edited in place while `comment` round-trips verbatim.
+function splitTrailingComment(body: string): TrailingComment {
+  const m = body.match(/\b(required|optional)\b/);
+  if (m) {
+    const rest = (body.slice(0, m.index) + body.slice(m.index! + m[1].length)).trim();
+    return { meta: m[1] as FieldMeta, comment: rest || undefined };
+  }
+  const c = body.trim();
+  return { comment: c || undefined };
+}
+
+function readTrailingComment(p: Scan): TrailingComment {
   skipInlineWs(p);
   if (p.s[p.i] === ',') p.i++;
   skipInlineWs(p);
   if (p.s[p.i] === '/' && p.s[p.i + 1] === '/') {
-    const body = readCommentLine(p);
-    const m = body.match(/\b(required|optional)\b/);
-    return m ? (m[1] as FieldMeta) : undefined;
+    return splitTrailingComment(readCommentLine(p));
   }
-  return undefined;
+  return {};
 }
 
 // Reconstruct fields from a block of un-commented text (one or more properties, possibly nested
@@ -178,8 +195,8 @@ function parseObjectFields(p: Scan): BodyField[] {
       if (p.s[p.i] !== ':') throw new Error('expected ":"');
       p.i++;
       const value = parseValue(p);
-      const meta = readTrailingMeta(p);
-      fields.push({ key, value, included: true, meta });
+      const { meta, comment } = readTrailingComment(p);
+      fields.push({ key, value, included: true, meta, comment });
       continue;
     }
     throw new Error('unexpected token');
@@ -260,10 +277,8 @@ function serializeObject(fields: BodyField[], level: number): string {
   const lines = fields.map((f, i) => {
     const comma = fields.slice(i + 1).some((x) => x.included) ? ',' : '';
     const valueText = serializeValue(f.value, level + 1);
-    const metaSuffix =
-      f.meta && f.value.kind === 'leaf' && isPrimitive(f.value.value)
-        ? `   // ${f.meta}`
-        : '';
+    const annotation = [f.meta, f.comment].filter(Boolean).join(' ');
+    const metaSuffix = annotation ? `   // ${annotation}` : '';
     const rendered = `${JSON.stringify(f.key)}: ${valueText}${comma}${metaSuffix}`;
     if (f.included) return `${itemPad}${rendered}`;
     // Excluded: comment out every line of the (possibly multi-line) block.
