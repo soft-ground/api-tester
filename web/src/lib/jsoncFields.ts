@@ -39,10 +39,6 @@ export interface ParsedBody {
   fields: BodyField[];
 }
 
-export function isPrimitive(v: unknown): boolean {
-  return v === null || typeof v !== 'object';
-}
-
 /* ----------------------------- parsing ----------------------------- */
 
 interface Scan {
