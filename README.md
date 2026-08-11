@@ -33,22 +33,27 @@ uncomment the block below._
 - **Collections & endpoints** — save and reuse APIs. Build **multi-level groups (folders)** by
   drag-and-drop (e.g. System > Domain > API, any depth).
 - **Proxy execution + history** — the server makes the call for you and stores a snapshot of the
-  request/response in the DB. History has **search/filter (method/status/text) and folders**.
+  request/response in the DB. History has **search/filter (method/status/text) and folders**, with
+  **multi-select** (Shift-range) to move or delete many entries at once.
 - **Environment variables & dynamic values** — per-environment variable sets (with an active
   environment) plus rules (`fixed` / `sequence` / `expression` / `timestamp` / `uuid` / `random`).
-  `{{variable}}` is substituted into URL, query, headers, body, and auth.
+  `{{variable}}` is substituted into URL, query, headers, body, and auth. A rule can optionally emit
+  a **fresh value for every occurrence** in one request (e.g. a unique id per line).
 - **Scenarios** — run several requests in sequence, with **value extraction chained into the next
   step** and **assertions**.
 - **Data-driven runs** — give it a CSV/JSON table and a scenario runs once per row, injecting each
   row's values via `{{column}}`, with per-iteration pass/fail.
 - **Request body** — `none` / `json` / `form` (urlencoded) / `raw` / **`multipart` (file upload)**.
+  The JSON body allows `//` and `/* */` **comments** (stripped before sending) and a **Fields** view
+  that marks each field `required` / `optional`, excludes fields, and types values (see
+  [Concepts](#concepts)).
 - **Auth helpers** — Bearer / Basic / API Key (header or query) injected automatically.
 - **Response viewer** — status, duration, size, JSON highlighting, Pretty/Raw, and **lossless
   binary storage + download + (opt-in) preview**.
 - **Import / export** — import from OpenAPI (Swagger) and curl, copy as curl, export/import a
   full-workspace backup JSON.
-- **Conveniences** — quick request (call once without saving), global search (Ctrl/Cmd+K), and
-  bilingual UI (English / Korean).
+- **Conveniences** — quick request (call once without saving), global search (Ctrl/Cmd+K),
+  **light / dark theme**, and bilingual UI (English / Korean).
 
 ---
 
@@ -206,6 +211,32 @@ Extraction and assertion paths use JSONPath notation. Supported: root `$`, dot a
 array index `$.items[0].id` (the `$` is optional). **Not supported**: wildcard `[*]`, recursive
 descent `..`, filters `[?()]`, slices `[0:2]`.
 
+**Request body: comments, required/optional, and the Fields view**
+The JSON body is **JSONC** — `//` line and `/* */` block comments are allowed and are **stripped
+before the request is sent**, so you can annotate the body without breaking it. Two conventions turn
+a trailing comment into a field marker:
+
+- A trailing comment whose **first word** is `required` or `optional` marks that field:
+  ```jsonc
+  {
+    "accountId": "{{id}}",      // required
+    "memo": "note",             // optional  free text after the keyword is kept as a note
+    "hint": "value"             // not required here -> stays a plain comment, not a marker
+  }
+  ```
+  Only the **leading** keyword counts. Anything after it is preserved as a free note, and a comment
+  that does not start with the keyword (e.g. `// not required here`) is never mistaken for a marker.
+
+- The **Fields** tab (next to **Raw**) renders the same body as a structured editor. There you can:
+  toggle each field's `required` / `optional` badge; **exclude** a field from the request (unchecking
+  comments it out instead of deleting it); edit nested objects and arrays; and pick each value's
+  **type** — `string` / `number` / `boolean` / `null` — so you can send an unquoted `42`, `true`, or
+  `null` rather than a quoted string.
+
+**Raw and Fields are two views of the exact same text.** Switch between them freely — comments,
+markers, notes, and value types round-trip losslessly. **OpenAPI (Swagger) import** fills in the
+`required` markers automatically from the schema.
+
 ---
 
 ## Local test API server (optional)
@@ -245,6 +276,17 @@ priority). If it is not found in the data, environment, rules, or extracts, the 
 No. Cancelling leaves the outcome "unknown" (the server may already have processed it), so it does
 not provide safety; navigating away stops the wait, the result is still recorded in history, and it
 is restored when you return. See the security/design notes below.
+
+**Q. How do I mark which body fields are required, or leave notes in the JSON body?**
+Add a trailing `//` comment whose first word is `required` or `optional` (e.g.
+`"id": "{{id}}",   // required`), or use the **Fields** tab to toggle the badge per field. All `//`
+and `/* */` comments are stripped before the request is sent. Only a leading `required`/`optional`
+keyword becomes a marker; any other comment is kept as a plain note. See
+[Concepts](#concepts) for the full rules.
+
+**Q. My JSON body sends `"42"` (a string) but the API expects the number `42`.**
+In the **Fields** tab, set that value's **type** to `number` (or `boolean` / `null`). Typed values
+are serialized unquoted.
 
 **Q. The response image preview does not appear.**
 Preview only shows when the **response body is an image** (e.g. `image/png`), and it is **opt-in**
