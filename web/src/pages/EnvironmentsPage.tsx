@@ -151,7 +151,9 @@ function EnvironmentsSection() {
                   title={t('env.activeTitle')}
                 />
               )}
-              <span className="env-name">{env.name}</span>
+              <span className="env-name">
+                {env.isShared ? t('env.extractGroupName') : env.name}
+              </span>
               {env.isActive && !env.isShared && (
                 <span className="active-tag">{t('env.active')}</span>
               )}

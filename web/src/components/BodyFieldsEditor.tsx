@@ -161,11 +161,7 @@ function FieldRow({
         )}
 
         <div className="bf-value">
-          {kind === 'object' ? (
-            <span className="bf-obj-hint">{`{ ${field.value.fields.length} }`}</span>
-          ) : kind === 'array' ? (
-            <span className="bf-obj-hint">{`[ ${field.value.items.length} ]`}</span>
-          ) : (
+          {kind === 'leaf' && (
             <LeafInput
               value={field.value.value}
               names={names}
@@ -270,9 +266,9 @@ function ItemRow({
         )}
         <div className="bf-value">
           {kind === 'object' ? (
-            <span className="bf-obj-hint">{`{ ${item.fields.length} }`}</span>
+            <span className="bf-obj-hint">{'{ }'}</span>
           ) : kind === 'array' ? (
-            <span className="bf-obj-hint">{`[ ${item.items.length} ]`}</span>
+            <span className="bf-obj-hint">{'[ ]'}</span>
           ) : (
             <LeafInput
               value={item.value}
