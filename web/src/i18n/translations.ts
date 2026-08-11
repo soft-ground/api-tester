@@ -341,6 +341,12 @@ const ko: Dict = {
   // history (extra)
   'hist.dblRename': '더블클릭: 이름변경',
   'hist.moveToFolder': '폴더로 이동',
+  'hist.selectAll': '전체 선택',
+  'hist.selectedCount': '{count}개 선택됨',
+  'hist.moveSelected': '폴더로 이동…',
+  'hist.deleteSelected': '선택 삭제',
+  'hist.clearSel': '선택 해제',
+  'hist.deleteSelectedConfirm': '선택한 {count}개 기록을 삭제할까요?',
   'hist.deleteEntry': '이력 삭제',
 };
 
@@ -656,6 +662,12 @@ const en: Dict = {
 
   'hist.dblRename': 'Double-click: rename',
   'hist.moveToFolder': 'Move to folder',
+  'hist.selectAll': 'Select all',
+  'hist.selectedCount': '{count} selected',
+  'hist.moveSelected': 'Move to folder…',
+  'hist.deleteSelected': 'Delete selected',
+  'hist.clearSel': 'Clear',
+  'hist.deleteSelectedConfirm': 'Delete {count} selected entries?',
   'hist.deleteEntry': 'Delete entry',
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ExecuteResult,
   HistoryDetail,
@@ -49,6 +49,8 @@ export default function HistoryPage() {
   );
   const [folders, setFolders] = useState<HistoryFolder[]>([]);
   const [folderSel, setFolderSel] = useState<string>(''); // '' all | 'null' uncategorized | id
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const lastIdxRef = useRef<number | null>(null);
   const [listWidth, setListWidth] = useState<number>(
     () => Number(localStorage.getItem('historyListWidth')) || 340,
   );
@@ -97,9 +99,72 @@ export default function HistoryPage() {
     load();
   }, [method, status, view, folderSel]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keep the checked set consistent with what is currently listed (drop ids filtered away).
+  useEffect(() => {
+    setCheckedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(items.map((i) => i.id));
+      const next = new Set<string>();
+      prev.forEach((id) => visible.has(id) && next.add(id));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [items]);
+
   const openDetail = async (id: string) => {
     setRerunResult(null);
     setSelected(await getHistory(id));
+  };
+
+  // Checkbox click: plain toggles one row; Shift extends from the last-clicked row.
+  // Read the modifier and anchor synchronously — they must not be referenced from inside the
+  // async setState updater (the synthetic event is not reliable there).
+  const onCheck = (i: number, ev: React.MouseEvent) => {
+    ev.stopPropagation();
+    const shift = ev.shiftKey;
+    const anchor = lastIdxRef.current;
+    const id = items[i].id;
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      const shouldCheck = !prev.has(id);
+      if (shift && anchor !== null) {
+        const [a, b] = [anchor, i].sort((x, y) => x - y);
+        for (let k = a; k <= b; k++) {
+          if (shouldCheck) next.add(items[k].id);
+          else next.delete(items[k].id);
+        }
+      } else if (shouldCheck) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    lastIdxRef.current = i;
+  };
+
+  const toggleAll = (check: boolean) => {
+    setCheckedIds(check ? new Set(items.map((i) => i.id)) : new Set());
+    lastIdxRef.current = null;
+  };
+
+  const moveSelected = async (val: string) => {
+    if (!val || checkedIds.size === 0) return;
+    await moveHistory([...checkedIds], val === '__none' ? null : val);
+    toggleAll(false);
+    await Promise.all([load(), refreshFolders()]);
+  };
+
+  const deleteSelected = async () => {
+    if (checkedIds.size === 0) return;
+    if (
+      !(await confirm({
+        message: t('hist.deleteSelectedConfirm', { count: checkedIds.size }),
+        tone: 'warn',
+      }))
+    )
+      return;
+    const ids = [...checkedIds];
+    await deleteHistory(ids);
+    if (selected && checkedIds.has(selected.id)) setSelected(null);
+    toggleAll(false);
+    await Promise.all([load(), refreshFolders()]);
   };
 
   const onMove = async (id: string, folderId: string) => {
@@ -247,11 +312,57 @@ export default function HistoryPage() {
           </div>
         )}
 
+        {items.length > 0 && (
+          <div className="hist-toolbar">
+            <label className="hist-selall">
+              <input
+                type="checkbox"
+                checked={checkedIds.size === items.length}
+                ref={(cb) => {
+                  if (cb)
+                    cb.indeterminate =
+                      checkedIds.size > 0 && checkedIds.size < items.length;
+                }}
+                onChange={(e) => toggleAll(e.target.checked)}
+              />
+              {checkedIds.size > 0
+                ? t('hist.selectedCount', { count: checkedIds.size })
+                : t('hist.selectAll')}
+            </label>
+            {checkedIds.size > 0 && (
+              <div className="hist-selactions">
+                <select
+                  className="hi-move"
+                  value=""
+                  onChange={(e) => moveSelected(e.target.value)}
+                  title={t('hist.moveSelected')}
+                >
+                  <option value="" disabled>
+                    {t('hist.moveSelected')}
+                  </option>
+                  <option value="__none">{t('hist.uncategorized')}</option>
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn-ghost" onClick={deleteSelected}>
+                  {t('hist.deleteSelected')}
+                </button>
+                <button className="btn-ghost" onClick={() => toggleAll(false)}>
+                  {t('hist.clearSel')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="history-items">
           {items.length === 0 && (
             <div className="tree-empty">{t('hist.empty')}</div>
           )}
-          {items.map((it) => (
+          {items.map((it, i) => (
             <div
               key={it.id}
               className={
@@ -259,6 +370,13 @@ export default function HistoryPage() {
               }
               onClick={() => openDetail(it.id)}
             >
+              <input
+                type="checkbox"
+                className="hi-check"
+                checked={checkedIds.has(it.id)}
+                onChange={() => {}}
+                onClick={(e) => onCheck(i, e)}
+              />
               <span className={`m-badge m-${it.reqMethod}`}>{it.reqMethod}</span>
               <span
                 className={`status-dot ${it.error ? 'st-err' : statusClass(it.resStatus)}`}
