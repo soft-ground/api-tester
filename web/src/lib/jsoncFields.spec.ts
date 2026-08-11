@@ -143,6 +143,29 @@ describe('trailing comments beyond required/optional', () => {
     expect(re.meta).toBe('required');
     expect(re.comment).toBe('just a note');
   });
+
+  it('only treats required/optional as meta when it is the first token', () => {
+    const src = [
+      '{',
+      '  "a": "1",   // see spec, required for prod',
+      '  "b": "2",   // optionalish note',
+      '  "c": "3"   // required',
+      '}',
+    ].join('\n');
+    const fields = parseBody(src).fields;
+    // keyword mid-sentence -> stays a plain comment
+    expect(f(fields, 'a').meta).toBeUndefined();
+    expect(f(fields, 'a').comment).toBe('see spec, required for prod');
+    // keyword is only a prefix of a longer word -> not meta
+    expect(f(fields, 'b').meta).toBeUndefined();
+    expect(f(fields, 'b').comment).toBe('optionalish note');
+    // bare leading keyword -> meta, no free text
+    expect(f(fields, 'c').meta).toBe('required');
+    expect(f(fields, 'c').comment).toBeUndefined();
+    // round-trips unchanged
+    const text = serializeBody(fields);
+    expect(serializeBody(parseBody(text).fields)).toBe(text);
+  });
 });
 
 describe('meta on object and array fields', () => {

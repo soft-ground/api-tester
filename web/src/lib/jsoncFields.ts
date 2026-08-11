@@ -122,14 +122,16 @@ interface TrailingComment {
 // Split a raw trailing-comment body into an optional required/optional token and the remaining
 // free text, so a user's own note (e.g. "// required account holder") is never discarded when the
 // badge is toggled — meta is edited in place while `comment` round-trips verbatim.
+// Only the FIRST whole token counts as meta, so prose like "// not required here" stays a plain
+// comment instead of being misread as required/optional.
 function splitTrailingComment(body: string): TrailingComment {
-  const m = body.match(/\b(required|optional)\b/);
+  const trimmed = body.trim();
+  const m = trimmed.match(/^(required|optional)(?=\s|$)/);
   if (m) {
-    const rest = (body.slice(0, m.index) + body.slice(m.index! + m[1].length)).trim();
+    const rest = trimmed.slice(m[1].length).trim();
     return { meta: m[1] as FieldMeta, comment: rest || undefined };
   }
-  const c = body.trim();
-  return { comment: c || undefined };
+  return { comment: trimmed || undefined };
 }
 
 function readTrailingComment(p: Scan): TrailingComment {
