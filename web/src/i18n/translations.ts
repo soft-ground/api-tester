@@ -32,6 +32,7 @@ const ko: Dict = {
   'shell.search': '🔍 검색',
   'shell.searchTitle': '전체 검색 (Ctrl/⌘+K)',
   'shell.language': '언어',
+  'shell.theme': '테마 전환 (라이트/다크)',
 
   // common
   'common.save': '저장',
@@ -364,6 +365,7 @@ const en: Dict = {
   'shell.search': '🔍 Search',
   'shell.searchTitle': 'Global search (Ctrl/⌘+K)',
   'shell.language': 'Language',
+  'shell.theme': 'Toggle theme (light/dark)',
 
   'common.save': 'Save',
   'common.saving': 'Saving…',

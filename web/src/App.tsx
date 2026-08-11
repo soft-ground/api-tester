@@ -17,6 +17,13 @@ const NAV = [
 ];
 
 type Layout = 'sidebar' | 'header';
+type Theme = 'dark' | 'light';
+
+function initialTheme(): Theme {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
 
 function NavItems({ collapsed }: { collapsed?: boolean }) {
   const { t } = useI18n();
@@ -64,11 +71,27 @@ export default function App() {
     () => localStorage.getItem('navCollapsed') === '1',
   );
   const [showSearch, setShowSearch] = useState(false);
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => localStorage.setItem('navLayout', layout), [layout]);
   useEffect(
     () => localStorage.setItem('navCollapsed', collapsed ? '1' : '0'),
     [collapsed],
+  );
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const themeToggle = (
+    <button
+      className="icon-btn theme-toggle"
+      title={t('shell.theme')}
+      aria-label={t('shell.theme')}
+      onClick={() => setTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
+    >
+      {theme === 'dark' ? '☀' : '☾'}
+    </button>
   );
 
   useEffect(() => {
@@ -106,6 +129,7 @@ export default function App() {
           </nav>
           <div className="topbar-right">
             <LangSelect />
+            {themeToggle}
             <button
               className="search-trigger"
               onClick={() => setShowSearch(true)}
@@ -154,6 +178,7 @@ export default function App() {
         </nav>
         <div className="sidebar-footer">
           {!collapsed && <LangSelect />}
+          {themeToggle}
           <HealthBadge />
           {!collapsed && (
             <button
