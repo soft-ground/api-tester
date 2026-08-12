@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatDate,
   evalExpression,
+  expressionVariables,
   resolveSimpleRule,
 } from '../src/variables/engine';
 
@@ -39,6 +40,16 @@ describe('evalExpression', () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
   });
+  it('lists referenced identifiers so per-use expressions can advance their deps', () => {
+    const vars = expressionVariables('concat(currentDate, currentTime, pad(seq, 6))');
+    expect(vars).toContain('currentDate');
+    expect(vars).toContain('currentTime');
+    expect(vars).toContain('seq');
+  });
+  it('returns [] on a parse error instead of throwing', () => {
+    expect(expressionVariables('concat(')).toEqual([]);
+  });
+
   it('invalid expression throws', () => {
     expect(() => evalExpression('1 +', {})).toThrow();
   });

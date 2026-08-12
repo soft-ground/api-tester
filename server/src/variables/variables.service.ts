@@ -12,7 +12,12 @@ import {
   UpdateEnvironmentDto,
   UpdateVariableRuleDto,
 } from './dto';
-import { evalExpression, resolveSimpleRule, RuleLike } from './engine';
+import {
+  evalExpression,
+  expressionVariables,
+  resolveSimpleRule,
+  RuleLike,
+} from './engine';
 
 // Variable names: allow Unicode letters (Korean, etc.) + digits + _ . -
 const VAR_PATTERN = /\{\{\s*([\p{L}\p{N}_.\-]+)\s*\}\}/gu;
@@ -331,68 +336,104 @@ export class VariablesService {
     const errors: Record<string, string> = {};
 
     const rules = await this.prisma.variableRule.findMany();
-    const expressions: RuleLike[] = [];
+    const ruleByName = new Map(rules.map((r) => [r.name, r]));
+    const expressions: typeof rules = [];
 
-    // Step 1: evaluate simple rules first
+    // Shared, threaded state for stateful rules (e.g. sequence): every consumption — a direct
+    // {{name}} occurrence or a reference inside a per-use expression — advances the same stream.
+    // Persisted once per rule at the end.
+    const stateOf = new Map<string, any>();
+    for (const r of rules) stateOf.set(r.name, (r as any).state);
+    const advanced = new Set<string>();
+
+    const consumeSimple = (rule: (typeof rules)[number]): string => {
+      const { value, nextState } = resolveSimpleRule({
+        ...(rule as unknown as RuleLike),
+        state: stateOf.get(rule.name),
+      });
+      if (nextState !== undefined && nextState !== null) {
+        stateOf.set(rule.name, nextState);
+        advanced.add(rule.name);
+      }
+      return value;
+    };
+    // Current value without advancing (ctx base for a rule a per-use expression will consume itself).
+    const peekSimple = (rule: (typeof rules)[number]): string =>
+      resolveSimpleRule({
+        ...(rule as unknown as RuleLike),
+        state: stateOf.get(rule.name),
+      }).value;
+
+    // Pre-scan: simple rules referenced by a per-use expression that repeats in this request. Those
+    // are consumed per occurrence by the expression, so step 1 must not advance them here.
+    const perUseExprRefs = new Set<string>();
+    for (const rule of rules) {
+      if (rule.type !== 'expression') continue;
+      if (!(rule.config as any)?.perUse) continue;
+      if ((occ?.[rule.name] ?? 0) <= 1) continue;
+      for (const name of expressionVariables((rule.config as any)?.expr ?? '')) {
+        const dep = ruleByName.get(name);
+        if (dep && dep.type !== 'expression') perUseExprRefs.add(name);
+      }
+    }
+
+    // Step 1: simple rules
     for (const rule of rules) {
       if (rule.type === 'expression') {
-        expressions.push(rule as unknown as RuleLike);
+        expressions.push(rule);
         continue;
       }
       const perUse = !!(rule.config as any)?.perUse;
       const count = occ?.[rule.name] ?? 0;
-      if (perUse && count > 1) {
-        // Regenerate for each occurrence, threading (and persisting) the rule state once.
-        let state = (rule as any).state;
-        let changed = false;
-        const list: string[] = [];
-        for (let i = 0; i < count; i++) {
-          const { value, nextState } = resolveSimpleRule({
-            ...(rule as unknown as RuleLike),
-            state,
-          });
-          list.push(value);
-          if (nextState) {
-            state = nextState;
-            changed = true;
-          }
-        }
+      if (perUseExprRefs.has(rule.name) && count === 0) {
+        // Owned by a per-use expression: expose the current value but do not advance it here.
+        ctx[rule.name] = peekSimple(rule);
+      } else if (perUse && count > 1) {
+        const list = Array.from({ length: count }, () => consumeSimple(rule));
         ctxLists[rule.name] = list;
-        if (persist && changed) {
-          await this.prisma.variableRule.update({
-            where: { id: rule.id },
-            data: { state: state as Prisma.InputJsonValue },
-          });
-        }
+        ctx[rule.name] = list[0];
       } else {
-        const { value, nextState } = resolveSimpleRule(
-          rule as unknown as RuleLike,
-        );
-        ctx[rule.name] = value;
-        if (persist && nextState) {
-          await this.prisma.variableRule.update({
-            where: { id: rule.id },
-            data: { state: nextState as Prisma.InputJsonValue },
-          });
-        }
+        ctx[rule.name] = consumeSimple(rule);
       }
     }
 
-    // Step 2: evaluate expressions using the previously built context as scope.
+    // Step 2: expressions. A per-use expression re-evaluates for each occurrence and consumes its
+    // referenced rules fresh each time, so a wrapped sequence advances (fixes "same value each use").
     // On failure, do not add to ctx so {{name}} stays unresolved and the request is blocked.
     for (const rule of expressions) {
-      const perUse = !!((rule as any).config)?.perUse;
+      const perUse = !!(rule.config as any)?.perUse;
       const count = occ?.[rule.name] ?? 0;
+      const expr = (rule.config as any)?.expr ?? '';
+      const deps = expressionVariables(expr)
+        .map((n) => ruleByName.get(n))
+        .filter(
+          (r): r is (typeof rules)[number] => !!r && r.type !== 'expression',
+        );
       try {
         if (perUse && count > 1) {
-          ctxLists[rule.name] = Array.from({ length: count }, () =>
-            evalExpression((rule as any).config?.expr ?? '', ctx),
-          );
+          ctxLists[rule.name] = Array.from({ length: count }, () => {
+            const scope: Record<string, unknown> = { ...ctx };
+            for (const dep of deps) scope[dep.name] = consumeSimple(dep);
+            return evalExpression(expr, scope);
+          });
+          ctx[rule.name] = ctxLists[rule.name][0];
         } else {
-          ctx[rule.name] = evalExpression((rule as any).config?.expr ?? '', ctx);
+          ctx[rule.name] = evalExpression(expr, ctx);
         }
       } catch (e: any) {
         errors[rule.name] = e?.message ?? String(e);
+      }
+    }
+
+    // Persist advanced (sequence) state once per rule.
+    if (persist) {
+      for (const name of advanced) {
+        const rule = ruleByName.get(name);
+        if (!rule) continue;
+        await this.prisma.variableRule.update({
+          where: { id: rule.id },
+          data: { state: stateOf.get(name) as Prisma.InputJsonValue },
+        });
       }
     }
 

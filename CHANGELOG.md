@@ -14,6 +14,12 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   the item (its whole nested structure, values, and `{{variables}}`) and inserts the copy right below.
   Shown on array items only, not on object fields (duplicating a field would create a duplicate key).
 
+### Fixed
+- A per-use (**New value on each use**) `expression` rule that wraps a sequence now yields a fresh
+  value for each `{{name}}` occurrence in one request — the referenced sequence advances per
+  occurrence — instead of repeating the same value (e.g. `concat(currentDate, currentTime, pad(seq,6))`
+  used three times now produces three distinct transaction numbers).
+
 ## [1.5.0] - 2026-08-12
 
 ### Added

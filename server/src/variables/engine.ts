@@ -48,6 +48,16 @@ export function evalExpression(
   return value == null ? '' : String(value);
 }
 
+// The identifiers an expression references (variable names, excluding literals). Helper function
+// names may be included; callers filter to the names they care about. Returns [] on a parse error.
+export function expressionVariables(expr: string): string[] {
+  try {
+    return parser.parse(expr).variables();
+  } catch {
+    return [];
+  }
+}
+
 // Produce a single rule value. For 'sequence', state is incremented only when persist=true.
 export interface RuleLike {
   name: string;
