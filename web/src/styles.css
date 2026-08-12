@@ -1129,6 +1129,8 @@ textarea:focus {
   cursor: pointer;
 }
 .bf-nullval {
+  flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   height: 100%;
