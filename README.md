@@ -274,9 +274,10 @@ markers, notes, and value types round-trip losslessly. **OpenAPI (Swagger) impor
 When a response body is JSON, the response toolbar shows an **Excel** button that downloads a
 multi-sheet `.xlsx`. Because JSON depth is irregular, the mapping follows fixed rules:
 
-- Every **array of objects**, at any depth, becomes its own **table sheet** named after its key
-  (columns = the union of the elements' keys). So both a top-level `data: [...]` and a wrapped
-  `{ code, data: { items: [...] } }` produce a table (a sheet named `data` / `items`).
+- Every **array of objects**, at any depth, becomes its own **table sheet** named after its key.
+  Each row is **flattened**, so a nested object inside an element turns into dot-path columns
+  (`results[].data.bankCode` → a `data.bankCode` column); columns are the union across rows. So both
+  a top-level `data: [...]` and a wrapped `{ code, data: { items: [...] } }` produce a real table.
 - All remaining **scalars and nested objects** go to a **`Summary`** sheet as key/value rows, nested
   objects flattened with dot paths (`data.total`).
 - Anything deeper that cannot be a column (an object, or a non-object array) is kept as a **JSON

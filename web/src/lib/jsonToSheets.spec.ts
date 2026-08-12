@@ -56,11 +56,39 @@ describe('jsonToSheets', () => {
     ]);
   });
 
-  it('preserves deeper nesting inside a table cell as a JSON string', () => {
+  it('flattens a nested object in a row into dot-path columns; arrays stay JSON strings', () => {
     const sheets = jsonToSheets([{ id: 1, tags: ['x', 'y'], meta: { k: 'v' } }]);
     expect(sheets[0].rows).toEqual([
-      ['id', 'tags', 'meta'],
-      [1, '["x","y"]', '{"k":"v"}'],
+      ['id', 'tags', 'meta.k'],
+      [1, '["x","y"]', 'v'],
+    ]);
+  });
+
+  it('flattens results[].data into columns (batch-create response)', () => {
+    const data = {
+      totalCount: 3,
+      failCount: 0,
+      continueOnError: false,
+      reference: null,
+      registeredDate: '20260810',
+      results: [
+        { index: 0, success: true, data: { bankCode: '001', accountName: '상품1' } },
+        { index: 1, success: true, data: { bankCode: '001', accountName: '상품2' } },
+      ],
+    };
+    const sheets = jsonToSheets(data);
+    expect(sheets.map((s) => s.name)).toEqual(['Summary', 'results']);
+    expect(sheets[0].rows).toEqual([
+      ['totalCount', 3],
+      ['failCount', 0],
+      ['continueOnError', false],
+      ['reference', ''],
+      ['registeredDate', '20260810'],
+    ]);
+    expect(sheets[1].rows).toEqual([
+      ['index', 'success', 'data.bankCode', 'data.accountName'],
+      [0, true, '001', '상품1'],
+      [1, true, '001', '상품2'],
     ]);
   });
 
