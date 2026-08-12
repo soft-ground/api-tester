@@ -265,6 +265,11 @@ a trailing comment into a field marker:
   comments it out instead of deleting it); edit nested objects and arrays; and pick each value's
   **type** — `string` / `number` / `boolean` / `null` — so you can send an unquoted `42`, `true`, or
   `null` rather than a quoted string.
+- **Duplicate an array item** — each item in a list shows a **⧉** button that deep-copies that item
+  (its whole nested structure, values, and `{{variables}}`) and inserts the copy right below, so
+  building a list of similar objects (e.g. batch payloads) doesn't mean rebuilding every nested field
+  by hand. It appears on **array items only**, not on object fields (duplicating a field would create
+  a duplicate key).
 
 **Raw and Fields are two views of the exact same text.** Switch between them freely — comments,
 markers, notes, and value types round-trip losslessly. **OpenAPI (Swagger) import** fills in the
