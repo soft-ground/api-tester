@@ -12,6 +12,8 @@ re-inspectable requests/responses**, **environment variables and dynamic values*
 > calls it on your behalf. That avoids CORS problems and records every request/response in history —
 > this is the core value of the tool over Swagger/curl.
 
+See [`CHANGELOG.md`](./CHANGELOG.md) for the release history.
+
 ---
 
 ## Screenshots
