@@ -204,7 +204,39 @@ shared group  <  active environment  <  dynamic-value rules  <  (scenario extrac
 ```
 `{{name}}` is a placeholder that resolves if it exists in the run-time context. It does not have to
 be an environment variable — a **data row or an extracted value** can fill it, and the data row has
-the highest priority.
+the highest priority. **Variable names** may contain Unicode letters (including Korean), digits, and
+`_ . -` — e.g. `{{user.id}}`, `{{x-token}}`, `{{기수}}`.
+
+**`baseUrl` and relative URLs**
+If a request URL does **not** start with `http://` or `https://`, the tool prepends the active
+environment's **`baseUrl`** variable (when defined). So you can set `baseUrl` per environment and
+write only the path (e.g. `/users/1`); switching the active environment then retargets every
+request. A full `http(s)://` URL is always used as-is.
+
+**Expression rules (mini-language)**
+The `expression` dynamic-value rule evaluates a small expression and can reference **other variables
+by their name** — environment variables and other rules are in scope. (Scenario extracts and
+data-row values resolve *after* rules, so an expression cannot read those.) Built-in helpers:
+
+| Helper | Result |
+|--------|--------|
+| `now("yyyy-MM-dd HH:mm:ss")` | current time; tokens `yyyy MM dd HH mm ss SSS`. `now()` with no arg returns ISO-8601 |
+| `timestamp()` | epoch milliseconds |
+| `uuid()` | a random UUID |
+| `randomInt(min, max)` | random integer, inclusive |
+| `pad(value, len, "0")` | left-pad to length |
+| `upper(s)` / `lower(s)` / `len(s)` | case / length |
+| `concat(a, b, ...)` | join as strings (use this to build strings, not `+`) |
+
+Examples: `concat(baseUrl, "/v1/", uuid())`, `pad(seq, 6, "0")`, `now("yyyyMMdd")`.
+
+**Import and backup are additive (never destructive)**
+Import **never overwrites or deletes** anything you already have. A **backup** or **OpenAPI
+(Swagger)** import adds only new items: when a name already exists (collection, endpoint,
+environment, or rule) the existing one is **kept** and the incoming duplicate is **skipped**. A
+**curl** import always adds one new endpoint (into a `curl import` collection by default; it does not
+de-duplicate). Re-importing is safe either way; to change an existing item, edit it in the UI (or
+remove it first).
 
 **JSONPath (subset)**
 Extraction and assertion paths use JSONPath notation. Supported: root `$`, dot access `$.a.b`,
@@ -377,6 +409,9 @@ api-tester/
   them on an untrusted network.
 - Request/response history is stored **in plaintext in the local DB**. Backup JSON can contain tokens
   and auth data, so be careful when sharing it (`*backup*.json` is gitignored).
+- **Limits:** each request times out after **30s**; response bodies are stored up to **25 MB**
+  (larger responses are truncated and flagged). Raise the cap with the `REQUEST_MAX_BODY_BYTES`
+  env var on the server container.
 - See [docs/security-checklist.md](./docs/security-checklist.md) for details, and the items to review
   before a public/multi-user deployment.
 
