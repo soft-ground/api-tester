@@ -48,8 +48,8 @@ uncomment the block below._
   that marks each field `required` / `optional`, excludes fields, and types values (see
   [Concepts](#concepts)).
 - **Auth helpers** — Bearer / Basic / API Key (header or query) injected automatically.
-- **Response viewer** — status, duration, size, JSON highlighting, Pretty/Raw, and **lossless
-  binary storage + download + (opt-in) preview**.
+- **Response viewer** — status, duration, size, JSON highlighting, Pretty/Raw, **lossless binary
+  storage + download + (opt-in) preview**, and **export a JSON response to Excel (.xlsx)**.
 - **Import / export** — import from OpenAPI (Swagger) and curl, copy as curl, export/import a
   full-workspace backup JSON.
 - **Conveniences** — quick request (call once without saving), global search (Ctrl/Cmd+K),
@@ -269,6 +269,21 @@ a trailing comment into a field marker:
 **Raw and Fields are two views of the exact same text.** Switch between them freely — comments,
 markers, notes, and value types round-trip losslessly. **OpenAPI (Swagger) import** fills in the
 `required` markers automatically from the schema.
+
+**Export a JSON response to Excel**
+When a response body is JSON, the response toolbar shows an **Excel** button that downloads a
+multi-sheet `.xlsx`. Because JSON depth is irregular, the mapping follows fixed rules:
+
+- Every **array of objects**, at any depth, becomes its own **table sheet** named after its key
+  (columns = the union of the elements' keys). So both a top-level `data: [...]` and a wrapped
+  `{ code, data: { items: [...] } }` produce a table (a sheet named `data` / `items`).
+- All remaining **scalars and nested objects** go to a **`Summary`** sheet as key/value rows, nested
+  objects flattened with dot paths (`data.total`).
+- Anything deeper that cannot be a column (an object, or a non-object array) is kept as a **JSON
+  string** in the cell, so nothing is lost.
+
+Example: `{ "result": "success", "data": [ {"bankCode":"001","bankName":"..."}, ... ] }` exports as a
+`Summary` sheet (`result | success`) plus a `data` sheet (`bankCode | bankName` with one row each).
 
 ---
 

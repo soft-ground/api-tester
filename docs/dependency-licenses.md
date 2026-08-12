@@ -31,6 +31,7 @@ Non-MIT items: `@prisma/client`, `prisma`, `reflect-metadata`, `rxjs` (Apache-2.
 | License | Count |
 |---------|-------|
 | MIT | 35 |
+| Apache-2.0 | `xlsx` + its SheetJS helper packages *(added 2026-08-12)* |
 | UNLICENSED | 1 *(our app `api-tester-web` — private, not an issue)* |
 
 ---
@@ -52,6 +53,7 @@ Non-MIT items: `@prisma/client`, `prisma`, `reflect-metadata`, `rxjs` (Apache-2.
 | Package | License |
 |---------|---------|
 | axios, react, react-dom, react-router-dom | MIT |
+| xlsx (SheetJS, for JSON→Excel export) | Apache-2.0 |
 | (dev) @vitejs/plugin-react, vite, @types/* | MIT |
 | (dev) typescript | Apache-2.0 |
 

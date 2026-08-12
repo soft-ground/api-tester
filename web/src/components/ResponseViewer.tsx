@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ExecuteResult, historyBodyUrl } from '../api/client';
 import JsonView from './JsonView';
 import JsonPicker from './JsonPicker';
+import { excelFilename, exportJsonToXlsx } from '../lib/exportExcel';
 import { useT } from '../i18n';
 
 function formatBytes(n: number): string {
@@ -249,6 +250,17 @@ export default function ResponseViewer({
             >
               {t('common.copy')}
             </button>
+            {parsed.ok && (
+              <button
+                className="btn-ghost"
+                onClick={() => {
+                  void exportJsonToXlsx(parsed.data, excelFilename());
+                }}
+                title={t('resp.exportExcelTitle')}
+              >
+                {t('resp.exportExcel')}
+              </button>
+            )}
             {onPickVariable && parsed.ok && (
               <span className="pick-hint">{t('resp.pickHint')}</span>
             )}
