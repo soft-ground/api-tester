@@ -309,7 +309,7 @@ const ko: Dict = {
   // request builder (extra)
   'req.curlCopied': 'curl 명령이 클립보드에 복사되었습니다',
   'req.copyCurlTitle': '현재 요청을 curl 로 복사',
-  'req.urlPh': 'https://api.example.com  ({{baseUrl}} 사용 가능)',
+  'req.urlPh': 'https://api.example.com  (비우거나 http(s):// 생략 시 baseUrl 자동 삽입)',
   'req.noVars': '환경 변수 메뉴에서 먼저 정의하세요.',
   'req.varClickCopy': '{source} — 클릭하면 복사',
   'req.blockedTitle': '전송을 중단했습니다',
@@ -630,7 +630,7 @@ const en: Dict = {
 
   'req.curlCopied': 'curl command copied to clipboard',
   'req.copyCurlTitle': 'Copy the current request as curl',
-  'req.urlPh': 'https://api.example.com  ({{baseUrl}} supported)',
+  'req.urlPh': 'https://api.example.com  (blank or no http(s):// → baseUrl is prepended)',
   'req.noVars': 'Define them first in the Environments menu.',
   'req.varClickCopy': '{source} — click to copy',
   'req.blockedTitle': 'The request was stopped',

@@ -208,10 +208,11 @@ the highest priority. **Variable names** may contain Unicode letters (including 
 `_ . -` — e.g. `{{user.id}}`, `{{x-token}}`, `{{기수}}`.
 
 **`baseUrl` and relative URLs**
-If a request URL does **not** start with `http://` or `https://`, the tool prepends the active
-environment's **`baseUrl`** variable (when defined). So you can set `baseUrl` per environment and
-write only the path (e.g. `/users/1`); switching the active environment then retargets every
-request. A full `http(s)://` URL is always used as-is.
+If a request's URL does **not** start with `http://` or `https://` — e.g. you leave the host box
+blank and fill only the path, or type a bare `/users/1` — the tool prepends the active environment's
+**`baseUrl`** variable (when defined). So you can point many saved requests at one environment and
+retarget them all at once by switching the active environment. A full `http(s)://` URL is always
+used as-is.
 
 **Expression rules (mini-language)**
 The `expression` dynamic-value rule evaluates a small expression and can reference **other variables
