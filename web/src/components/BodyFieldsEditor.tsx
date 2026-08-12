@@ -62,6 +62,12 @@ function uniqueKey(fields: BodyField[]): string {
 
 const emptyLeaf = (): FieldValue => ({ kind: 'leaf', value: '' });
 
+// Deep copy of a field value (used to duplicate an array item with its full nested structure).
+const cloneValue = (v: FieldValue): FieldValue =>
+  typeof structuredClone === 'function'
+    ? structuredClone(v)
+    : (JSON.parse(JSON.stringify(v)) as FieldValue);
+
 /* ----------------------------- object fields ----------------------------- */
 
 function FieldList({
@@ -218,6 +224,13 @@ function ItemList({
           names={names}
           onChange={(nv) => onChange(items.map((x, idx) => (idx === i ? nv : x)))}
           onRemove={() => onChange(items.filter((_, idx) => idx !== i))}
+          onDuplicate={() =>
+            onChange([
+              ...items.slice(0, i + 1),
+              cloneValue(items[i]),
+              ...items.slice(i + 1),
+            ])
+          }
         />
       ))}
       <button
@@ -238,6 +251,7 @@ function ItemRow({
   names,
   onChange,
   onRemove,
+  onDuplicate,
 }: {
   item: FieldValue;
   index: number;
@@ -245,6 +259,7 @@ function ItemRow({
   names: VarName[];
   onChange: (v: FieldValue) => void;
   onRemove: () => void;
+  onDuplicate: () => void;
 }) {
   const t = useT();
   const [open, setOpen] = useState(true);
@@ -275,6 +290,14 @@ function ItemRow({
             />
           )}
         </div>
+        <button
+          type="button"
+          className="bf-dup"
+          title={t('req.itemDuplicate')}
+          onClick={onDuplicate}
+        >
+          ⧉
+        </button>
         <button type="button" className="bf-del" title={t('common.delete')} onClick={onRemove}>
           ✕
         </button>

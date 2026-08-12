@@ -338,6 +338,7 @@ const ko: Dict = {
   'req.fieldObjHint': '배열은 Raw 뷰에서 편집하세요',
   'req.fieldAdd': '+ 필드',
   'req.itemAdd': '+ 항목',
+  'req.itemDuplicate': '항목 복제 (구조·값 그대로 아래에 추가)',
   'req.fieldArrHint': '배열은 Raw 뷰에서 편집',
 
   // history (extra)
@@ -662,6 +663,7 @@ const en: Dict = {
   'req.fieldObjHint': 'Edit arrays in the Raw view',
   'req.fieldAdd': '+ Field',
   'req.itemAdd': '+ Item',
+  'req.itemDuplicate': 'Duplicate item (same structure and values, inserted below)',
   'req.fieldArrHint': 'Edit arrays in the Raw view',
 
   'hist.dblRename': 'Double-click: rename',
