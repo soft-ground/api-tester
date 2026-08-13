@@ -19,6 +19,10 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   value for each `{{name}}` occurrence in one request — the referenced sequence advances per
   occurrence — instead of repeating the same value (e.g. `concat(currentDate, currentTime, pad(seq,6))`
   used three times now produces three distinct transaction numbers).
+- When a multipart **file could not be read** on Send (e.g. it was changed or moved after being
+  attached), the response now shows a specific message naming the file and telling you to re-attach it,
+  instead of a generic "Request failed". Only this known cause is special-cased; other failures keep
+  their own message.
 
 ## [1.5.0] - 2026-08-12
 

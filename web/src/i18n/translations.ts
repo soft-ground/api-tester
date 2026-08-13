@@ -98,6 +98,8 @@ const ko: Dict = {
   'req.mpAddPart': '+ 파트 추가',
   'req.mpHint':
     '텍스트/파일 파트로 multipart/form-data 전송. 파일은 저장되지 않으니 전송 전 다시 선택하세요. 텍스트 값엔 {{변수}} 사용 가능.',
+  'req.fileReadFailed':
+    '첨부 파일 "{name}"을(를) 읽을 수 없습니다. 첨부한 뒤 파일이 변경·이동·삭제되었을 수 있으니, 다시 첨부한 후 전송하세요.',
   'req.clearResult': '결과 지우기',
   'req.clearResultTitle': '요청·응답 결과 영역 비우기',
   'req.varsAvailable': '사용 가능한 변수 {count}개',
@@ -436,6 +438,8 @@ const en: Dict = {
   'req.mpAddPart': '+ Add part',
   'req.mpHint':
     "Send multipart/form-data with text/file parts. Files aren't saved — re-select before sending. {{var}} works in text values.",
+  'req.fileReadFailed':
+    'Could not read the attached file "{name}". It may have been changed, moved, or removed since you attached it — re-attach it and send again.',
   'req.clearResult': 'Clear result',
   'req.clearResultTitle': 'Clear the request/response result',
   'req.varsAvailable': '{count} variables available',

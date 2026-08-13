@@ -53,12 +53,25 @@ function parseMultipart(raw?: string | null): MultipartPart[] {
     return [];
   }
 }
+// Thrown only when the browser cannot read an attached file (its FileReader errored — e.g. the file
+// was modified, moved, or removed after it was attached). A distinct type so the send handler can
+// report this specific, known cause without guessing about any other failure.
+class FileReadError extends Error {
+  fileName: string;
+  constructor(fileName: string) {
+    super(`Could not read file: ${fileName}`);
+    this.name = 'FileReadError';
+    this.fileName = fileName;
+    Object.setPrototypeOf(this, FileReadError.prototype);
+  }
+}
+
 // Convert a file to base64 (stripping the data URI prefix)
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result).split(',')[1] ?? '');
-    r.onerror = reject;
+    r.onerror = () => reject(new FileReadError(file.name));
     r.readAsDataURL(file);
   });
 }
@@ -268,12 +281,18 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
       saveResult(ep.id, res); // keep so the prior result is restored across navigation
       if (res.blocked) setBlocked(res); // unresolved variables → modal warning
     } catch (e: any) {
+      // Only override the message for a cause we are certain about (a file we could not read);
+      // otherwise keep the error's own message or the generic fallback.
+      const error =
+        e instanceof FileReadError
+          ? t('req.fileReadFailed', { name: e.fileName })
+          : e?.message || t('resp.failed');
       const errRes: ExecuteResult = {
         historyId: '',
         request: { method: ep.method, url: fullUrl, headers: {} },
         response: null,
         success: false,
-        error: e?.message || t('resp.failed'),
+        error,
       };
       setResult(errRes);
       saveResult(ep.id, errRes);
