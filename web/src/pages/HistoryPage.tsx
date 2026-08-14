@@ -51,6 +51,7 @@ export default function HistoryPage() {
   const [folderSel, setFolderSel] = useState<string>(''); // '' all | 'null' uncategorized | id
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const lastIdxRef = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<string>(''); // folder-chip key currently under a drag
   const [listWidth, setListWidth] = useState<number>(
     () => Number(localStorage.getItem('historyListWidth')) || 340,
   );
@@ -167,6 +168,14 @@ export default function HistoryPage() {
     await Promise.all([load(), refreshFolders()]);
   };
 
+  // Drag a single history row onto a folder chip to move it there.
+  const dropToFolder = async (folderId: string | null, id: string) => {
+    setDragOver('');
+    if (!id) return;
+    await moveHistory([id], folderId);
+    await Promise.all([load(), refreshFolders()]);
+  };
+
   const onDeleteItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!(await confirm({ message: t('hist.deleteConfirm'), tone: 'warn' })))
@@ -278,9 +287,19 @@ export default function HistoryPage() {
             </button>
             <button
               className={
-                folderSel === 'null' ? 'folder-chip active' : 'folder-chip'
+                (folderSel === 'null' ? 'folder-chip active' : 'folder-chip') +
+                (dragOver === 'null' ? ' drop-over' : '')
               }
               onClick={() => setFolderSel('null')}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOver('null');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                dropToFolder(null, e.dataTransfer.getData('text/plain'));
+              }}
             >
               {t('hist.uncategorized')}
             </button>
@@ -288,10 +307,20 @@ export default function HistoryPage() {
               <button
                 key={f.id}
                 className={
-                  folderSel === f.id ? 'folder-chip active' : 'folder-chip'
+                  (folderSel === f.id ? 'folder-chip active' : 'folder-chip') +
+                  (dragOver === f.id ? ' drop-over' : '')
                 }
                 onClick={() => setFolderSel(f.id)}
                 onDoubleClick={(e) => renameFolder(f, e)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setDragOver(f.id);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  dropToFolder(f.id, e.dataTransfer.getData('text/plain'));
+                }}
                 title={t('hist.dblRename')}
               >
                 {f.name}
@@ -364,6 +393,12 @@ export default function HistoryPage() {
                 selected?.id === it.id ? 'history-item active' : 'history-item'
               }
               onClick={() => openDetail(it.id)}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', it.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={() => setDragOver('')}
             >
               <input
                 type="checkbox"

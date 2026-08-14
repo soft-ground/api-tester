@@ -71,7 +71,8 @@ uncomment the block below._
   drag-and-drop (e.g. System > Domain > API, any depth).
 - **Proxy execution + history** — the server makes the call for you and stores a snapshot of the
   request/response in the DB. History has **search/filter (method/status/text) and folders**, with
-  **multi-select** (Shift-range) to move or delete many entries at once.
+  **multi-select** (Shift-range) to move or delete many entries at once, or **drag a single entry onto
+  a folder**.
 - **Environment variables & dynamic values** — per-environment variable sets (with an active
   environment) plus rules (`fixed` / `sequence` / `expression` / `timestamp` / `uuid` / `random`).
   `{{variable}}` is substituted into URL, query, headers, body, and auth. A rule can optionally emit

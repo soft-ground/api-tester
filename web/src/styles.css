@@ -1412,6 +1412,13 @@ textarea:focus {
   border-color: var(--accent);
   color: var(--text);
 }
+/* highlighted while a history row is dragged over it */
+.folder-chip.drop-over {
+  border-color: var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel-2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+}
 .folder-chip.add {
   color: var(--accent);
 }
