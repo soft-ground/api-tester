@@ -176,6 +176,17 @@ export default function HistoryPage() {
     await Promise.all([load(), refreshFolders()]);
   };
 
+  // Drop onto the "+ folder" chip: prompt for a name, create the folder, then move the entry into it.
+  const dropToNewFolder = async (id: string) => {
+    setDragOver('');
+    if (!id) return;
+    const name = await prompt({ message: t('hist.folderNamePrompt') });
+    if (!name) return;
+    const folder = await createHistoryFolder(name);
+    await moveHistory([id], folder.id);
+    await Promise.all([load(), refreshFolders()]);
+  };
+
   const onDeleteItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!(await confirm({ message: t('hist.deleteConfirm'), tone: 'warn' })))
@@ -330,7 +341,21 @@ export default function HistoryPage() {
                 </span>
               </button>
             ))}
-            <button className="folder-chip add" onClick={addFolder}>
+            <button
+              className={
+                'folder-chip add' + (dragOver === '__new' ? ' drop-over' : '')
+              }
+              onClick={addFolder}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOver('__new');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                dropToNewFolder(e.dataTransfer.getData('text/plain'));
+              }}
+            >
               {t('hist.addFolder')}
             </button>
           </div>

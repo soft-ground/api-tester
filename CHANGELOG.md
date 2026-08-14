@@ -14,7 +14,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   the item (its whole nested structure, values, and `{{variables}}`) and inserts the copy right below.
   Shown on array items only, not on object fields (duplicating a field would create a duplicate key).
 - **Drag a history entry onto a folder chip** (folder view) to move it there — a quick one-handed path
-  for a single entry, alongside the checkbox + toolbar move that handles one or many.
+  for a single entry, alongside the checkbox + toolbar move that handles one or many. Dropping on the
+  **+ Folder** chip prompts for a name and moves the entry into the newly created folder.
 
 ### Changed
 - **History: move entries to a folder by selecting them (checkbox) and using the toolbar.** The per-row
