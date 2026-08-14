@@ -345,7 +345,6 @@ const ko: Dict = {
 
   // history (extra)
   'hist.dblRename': '더블클릭: 이름변경',
-  'hist.moveToFolder': '폴더로 이동',
   'hist.selectAll': '전체 선택',
   'hist.selectedCount': '{count}개 선택됨',
   'hist.moveSelected': '폴더로 이동…',
@@ -671,7 +670,6 @@ const en: Dict = {
   'req.fieldArrHint': 'Edit arrays in the Raw view',
 
   'hist.dblRename': 'Double-click: rename',
-  'hist.moveToFolder': 'Move to folder',
   'hist.selectAll': 'Select all',
   'hist.selectedCount': '{count} selected',
   'hist.moveSelected': 'Move to folder…',

@@ -14,6 +14,12 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   the item (its whole nested structure, values, and `{{variables}}`) and inserts the copy right below.
   Shown on array items only, not on object fields (duplicating a field would create a duplicate key).
 
+### Changed
+- **History: move entries to a folder by selecting them (checkbox) and using the toolbar.** The per-row
+  hover folder dropdown was removed — it could overlay and obscure the row and was awkward on narrow
+  windows, and selection already handles one or many entries. Deleting a single entry is still a
+  per-row hover action.
+
 ### Fixed
 - A per-use (**New value on each use**) `expression` rule that wraps a sequence now yields a fresh
   value for each `{{name}}` occurrence in one request — the referenced sequence advances per
@@ -23,10 +29,6 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   attached), the response now shows a specific message naming the file and telling you to re-attach it,
   instead of a generic "Request failed". Only this known cause is special-cased; other failures keep
   their own message.
-- History row hover actions (the folder-move dropdown and delete) no longer overlay the URL as garbled
-  text; the row content fades cleanly under a full-height actions strip, and the faded area stays
-  click-through so the row still opens on narrow or low-resolution windows (only the controls capture
-  clicks).
 
 ## [1.5.0] - 2026-08-12
 

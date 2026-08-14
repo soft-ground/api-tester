@@ -167,11 +167,6 @@ export default function HistoryPage() {
     await Promise.all([load(), refreshFolders()]);
   };
 
-  const onMove = async (id: string, folderId: string) => {
-    await moveHistory([id], folderId || null);
-    await Promise.all([load(), refreshFolders()]);
-  };
-
   const onDeleteItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!(await confirm({ message: t('hist.deleteConfirm'), tone: 'warn' })))
@@ -391,19 +386,6 @@ export default function HistoryPage() {
                 {new Date(it.executedAt).toLocaleString()}
               </span>
               <span className="hi-actions" onClick={(e) => e.stopPropagation()}>
-                <select
-                  className="hi-move"
-                  value={it.folderId ?? ''}
-                  onChange={(e) => onMove(it.id, e.target.value)}
-                  title={t('hist.moveToFolder')}
-                >
-                  <option value="">{t('hist.uncategorized')}</option>
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
                 <button
                   className="mini hi-del"
                   onClick={(e) => onDeleteItem(it.id, e)}
