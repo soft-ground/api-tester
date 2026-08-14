@@ -9,6 +9,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-14
+
 ### Added
 - **Duplicate an array item** in the Fields view — each list item has a **⧉** button that deep-copies
   the item (its whole nested structure, values, and `{{variables}}`) and inserts the copy right below.
@@ -94,7 +96,8 @@ Initial public open-source release (SOFT GROUND, MIT).
 - Import from OpenAPI (Swagger) and curl; full-workspace backup import/export (merge-only).
 - Self-hosted Docker deployment and a bilingual (English / Korean) UI.
 
-[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/soft-ground/api-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/soft-ground/api-tester/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/soft-ground/api-tester/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/soft-ground/api-tester/compare/v1.3.0...v1.3.1
