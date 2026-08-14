@@ -16,6 +16,41 @@ See [`CHANGELOG.md`](./CHANGELOG.md) for the release history.
 
 ---
 
+## Why this exists
+
+API Tester focuses on one thing: **self-hosted, local-first API testing where the data stays on
+your own machine.** The backend runs the calls (browser → server → target) and records every request
+and response in a local database you control — no account, no cloud sync, no per-seat pricing. On top
+of that it adds a small amount of **no-code automation** for everyday backend testing: dynamic values
+(including a fresh value per use, such as a unique transaction number), request chaining that feeds a
+value from one response into the next call, and data-driven runs over a table of inputs.
+
+It is intentionally narrow. It does not try to match the breadth of large API platforms — it tries to
+make the common loop of *"test my own server, keep the data local, don't fight a cloud"* fast.
+
+**It is likely a good fit if you want to:**
+
+- Keep request/response history and tokens off any third-party cloud (internal or sensitive APIs).
+- Run and organize saved requests without creating an account or signing in.
+- Chain requests (extract a value, inject it into the next) and drive them from a CSV/JSON table.
+- Generate dynamic values (`sequence` / `uuid` / `timestamp` / `expression`), with a per-occurrence option.
+- Self-host a shared instance reachable in the browser, or call a target only visible to a server.
+
+**You may be better served elsewhere if you need:**
+
+- A polished cross-platform desktop client or git-versioned collections — see **Bruno** or
+  **Hoppscotch** (both local and open-source), or **Insomnia** / **Postman**.
+- A large collaboration platform (shared workspaces, mock servers, monitors, broad integrations) —
+  **Postman**.
+- Code-based regression that runs in CI against a spec or a URL — **Karate**, **REST Assured**,
+  **Schemathesis**, or **Newman**.
+
+These tools are complementary rather than rivals: it is common to explore with a client, automate
+regression in CI with a code-based tool, and reach for a self-hosted recorder like this one when data
+ownership and a server-side execution model are what matter.
+
+---
+
 ## Screenshots
 
 _Screenshots live in [`docs/images/`](./docs/images) — see
