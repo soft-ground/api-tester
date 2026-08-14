@@ -23,6 +23,9 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   attached), the response now shows a specific message naming the file and telling you to re-attach it,
   instead of a generic "Request failed". Only this known cause is special-cased; other failures keep
   their own message.
+- History row hover actions (the folder-move dropdown and delete) no longer overlay the URL as garbled
+  text; the row content now fades cleanly under a full-height actions strip, which stays readable on
+  narrow or low-resolution windows.
 
 ## [1.5.0] - 2026-08-12
 

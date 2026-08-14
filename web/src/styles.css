@@ -1455,11 +1455,16 @@ textarea:focus {
 }
 .hi-actions {
   position: absolute;
-  right: 10px;
-  top: 7px;
+  right: 0;
+  top: 0;
+  bottom: 0;
   display: none;
   align-items: center;
   gap: 6px;
+  padding: 0 10px 0 32px;
+  /* Fade the row content out under the actions rather than overlaying it as garbled text; the
+     solid part matches the hovered row background so only the controls read on top. */
+  background: linear-gradient(to right, transparent, var(--panel-2) 28px);
 }
 .history-item:hover .hi-actions {
   display: flex;
@@ -1467,7 +1472,7 @@ textarea:focus {
 .hi-move {
   font-size: 11px;
   padding: 2px 4px;
-  max-width: 110px;
+  max-width: 108px;
 }
 .hi-del:hover {
   color: var(--down);
