@@ -24,8 +24,9 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   instead of a generic "Request failed". Only this known cause is special-cased; other failures keep
   their own message.
 - History row hover actions (the folder-move dropdown and delete) no longer overlay the URL as garbled
-  text; the row content now fades cleanly under a full-height actions strip, which stays readable on
-  narrow or low-resolution windows.
+  text; the row content fades cleanly under a full-height actions strip, and the faded area stays
+  click-through so the row still opens on narrow or low-resolution windows (only the controls capture
+  clicks).
 
 ## [1.5.0] - 2026-08-12
 

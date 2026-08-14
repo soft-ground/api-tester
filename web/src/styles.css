@@ -1465,6 +1465,12 @@ textarea:focus {
   /* Fade the row content out under the actions rather than overlaying it as garbled text; the
      solid part matches the hovered row background so only the controls read on top. */
   background: linear-gradient(to right, transparent, var(--panel-2) 28px);
+  /* Let clicks on the faded strip fall through to open the row (matters on narrow widths where the
+     strip covers most of it); only the controls below capture clicks. */
+  pointer-events: none;
+}
+.hi-actions > * {
+  pointer-events: auto;
 }
 .history-item:hover .hi-actions {
   display: flex;
