@@ -2034,6 +2034,9 @@ textarea:focus {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   white-space: normal;
   display: block;
+  /* Never taller than the viewport; scroll inside if the content is very tall. */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
 }
 .pp-title {
   font-size: 11px;

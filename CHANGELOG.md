@@ -20,6 +20,9 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   variables saved in another window or tab appear (it still does not auto-refresh on its own).
 - Saving environment variables or a dynamic-value rule now shows a "Saved" toast, so it is clear the
   save took effect (previously there was no feedback).
+- The "save a response value as a variable" popover now measures its real height and stays fully
+  within the viewport (flipping above the value or clamping), so its Save button is reachable even
+  when the value is near the bottom of the window.
 
 ## [1.6.0] - 2026-08-14
 

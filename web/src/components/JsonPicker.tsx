@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../i18n';
 
@@ -209,20 +209,35 @@ function PickPopover({
 }) {
   const t = useT();
   const [name, setName] = useState(defaultName);
+  const ref = useRef<HTMLDivElement>(null);
+  // Start from an estimate, then correct using the popover's real measured height (its content
+  // height varies — a long value wraps, etc.) so it always stays fully inside the viewport.
+  const [pos, setPos] = useState({ top: anchorRect.bottom + 4, left: anchorRect.left });
 
-  // Compute screen coordinates from the clicked value. Flip upward if there is not enough space below.
-  let top = anchorRect.bottom + 4;
-  if (top + POP_H > window.innerHeight) {
-    top = Math.max(8, anchorRect.top - POP_H - 4);
-  }
-  let left = anchorRect.left;
-  if (left + POP_W > window.innerWidth) {
-    left = Math.max(8, window.innerWidth - POP_W - 8);
-  }
+  useLayoutEffect(() => {
+    const m = 8; // viewport margin
+    const h = ref.current?.offsetHeight ?? POP_H;
+    const w = ref.current?.offsetWidth ?? POP_W;
+    let top = anchorRect.bottom + 4;
+    if (top + h > window.innerHeight - m) {
+      const above = anchorRect.top - h - 4;
+      // Flip above the value if it fits there; otherwise clamp so the bottom stays on screen.
+      top = above >= m ? above : Math.max(m, window.innerHeight - h - m);
+    }
+    let left = anchorRect.left;
+    if (left + w > window.innerWidth - m) {
+      left = Math.max(m, window.innerWidth - w - m);
+    }
+    setPos({ top, left });
+  }, [anchorRect]);
 
   // Render via a portal on body so it is not clipped by the box overflow.
   return createPortal(
-    <div className="pick-popover" style={{ top, left, width: POP_W }}>
+    <div
+      ref={ref}
+      className="pick-popover"
+      style={{ top: pos.top, left: pos.left, width: POP_W }}
+    >
       <div className="pp-value" title={value}>
         {value.length > 60 ? value.slice(0, 60) + '…' : value}
       </div>
