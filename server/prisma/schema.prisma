@@ -42,6 +42,7 @@ model ApiEndpoint {
   bodyTemplate String? // may contain {{var}}
   authType     String        @default("none") // none | bearer | basic | apikey
   authConfig   Json          @default("{}") // { token } | { username, password } | { key, value, in }
+  locked       Boolean       @default(false) // guard: confirm before sending (create/modify/delete etc.)
   histories    CallHistory[]
   steps        ScenarioStep[]
   createdAt    DateTime      @default(now())

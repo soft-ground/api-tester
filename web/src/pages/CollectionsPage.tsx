@@ -540,6 +540,11 @@ export default function CollectionsPage() {
                 </span>
                 <span className={`m-badge m-${ep.method}`}>{ep.method}</span>
                 <span className="ep-name">{ep.name}</span>
+                {ep.locked && (
+                  <span className="ep-lock" title={t('req.lockOn')}>
+                    🔒
+                  </span>
+                )}
                 <button
                   className="mini ep-act"
                   onClick={(e) => onDuplicate(ep.id, e)}

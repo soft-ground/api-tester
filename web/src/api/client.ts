@@ -52,6 +52,7 @@ export interface ApiEndpoint {
   bodyTemplate: string | null;
   authType: AuthType;
   authConfig: AuthConfig;
+  locked?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -61,6 +62,7 @@ export interface EndpointSummary {
   name: string;
   method: string;
   path: string;
+  locked?: boolean;
 }
 
 export interface Collection {

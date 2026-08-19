@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsInt,
   IsObject,
   IsOptional,
@@ -100,6 +101,11 @@ export class CreateEndpointDto {
   @IsOptional()
   @IsObject()
   authConfig?: Record<string, unknown>;
+
+  // Guard flag: when true, the UI asks for confirmation before sending.
+  @IsOptional()
+  @IsBoolean()
+  locked?: boolean;
 }
 
 export class UpdateEndpointDto extends CreateEndpointDto {

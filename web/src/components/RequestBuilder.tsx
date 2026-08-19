@@ -144,7 +144,7 @@ type ReqTab = 'params' | 'headers' | 'body' | 'auth';
 
 export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
   const t = useT();
-  const { prompt } = useDialog();
+  const { prompt, confirm } = useDialog();
   const [ep, setEp] = useState<ApiEndpoint>(endpoint);
   // Always reference the latest ep (to read the latest value after IME commit on save)
   const epRef = useRef(ep);
@@ -231,7 +231,31 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
     setTimeout(() => setNote(null), 2000);
   };
 
+  const toggleLock = async () => {
+    const next = !ep.locked;
+    setEp((c) => ({ ...c, locked: next }));
+    try {
+      await updateEndpoint(ep.id, { locked: next });
+      // Refresh the tree indicator + baseline lock without touching the body draft
+      // (editableSnapshot excludes `locked`, so body-dirty is unaffected).
+      onSaved({ ...endpoint, locked: next });
+    } catch {
+      setEp((c) => ({ ...c, locked: !next })); // revert on failure
+    }
+  };
+
   const send = async () => {
+    // Locked endpoints ask for confirmation before running (guards create/modify/delete calls).
+    if (!scratch && ep.locked) {
+      const ok = await confirm({
+        message: t('req.lockConfirm', {
+          method: ep.method,
+          url: fullUrl || ep.path || '(URL)',
+        }),
+        tone: 'warn',
+      });
+      if (!ok) return;
+    }
     setSending(true);
     setResult(null);
     try {
@@ -375,6 +399,17 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
           value={ep.name}
           onChange={(e) => patch({ name: e.target.value })}
         />
+        {!scratch && (
+          <button
+            type="button"
+            className={`lock-btn${ep.locked ? ' locked' : ''}`}
+            onClick={toggleLock}
+            title={ep.locked ? t('req.lockOn') : t('req.lockOff')}
+            aria-label={ep.locked ? t('req.lockOn') : t('req.lockOff')}
+          >
+            {ep.locked ? '🔒' : '🔓'}
+          </button>
+        )}
         {scratch ? (
           <span className="scratch-badge">{t('req.scratch')}</span>
         ) : (

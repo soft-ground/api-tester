@@ -9,6 +9,12 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 
 ## [Unreleased]
 
+### Added
+- **Lock an endpoint** to guard against accidental runs. A lock toggle next to the request name marks
+  create/modify/delete (or rarely-run) APIs; a locked request asks for confirmation — showing the
+  method and URL — before it is sent, and locked entries show a 🔒 in the collection tree. Adds a
+  non-destructive DB migration for the endpoint `locked` field.
+
 ## [1.6.0] - 2026-08-14
 
 ### Added

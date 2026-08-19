@@ -25,7 +25,7 @@ export class EndpointsService {
       include: {
         endpoints: {
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-          select: { id: true, name: true, method: true, path: true },
+          select: { id: true, name: true, method: true, path: true, locked: true },
         },
       },
     });
@@ -151,6 +151,7 @@ export class EndpointsService {
         bodyTemplate: src.bodyTemplate,
         authType: src.authType,
         authConfig: src.authConfig as Prisma.InputJsonValue,
+        locked: src.locked,
       },
     });
   }
@@ -202,6 +203,7 @@ export class EndpointsService {
     if (dto.authType !== undefined) data.authType = dto.authType;
     if (dto.authConfig !== undefined)
       data.authConfig = dto.authConfig as Prisma.InputJsonValue;
+    if (dto.locked !== undefined) data.locked = dto.locked;
     return data as Prisma.ApiEndpointUncheckedCreateInput;
   }
 

@@ -772,6 +772,30 @@ textarea:focus {
   font-size: 15px;
   font-weight: 600;
 }
+.lock-btn {
+  flex: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.lock-btn:hover {
+  opacity: 1;
+}
+.lock-btn.locked {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.ep-lock {
+  flex: none;
+  margin-left: 4px;
+  font-size: 11px;
+}
 /* multipart part editor */
 .mp-editor {
   display: flex;
