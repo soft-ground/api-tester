@@ -18,6 +18,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 ### Fixed
 - The Environments view reloads the selected environment from the database when you (re)select it, so
   variables saved in another window or tab appear (it still does not auto-refresh on its own).
+- Saving environment variables or a dynamic-value rule now shows a "Saved" toast, so it is clear the
+  save took effect (previously there was no feedback).
 
 ## [1.6.0] - 2026-08-14
 

@@ -45,6 +45,12 @@ function EnvironmentsSection() {
   const [selected, setSelected] = useState<Environment | null>(null);
   const [rows, setRows] = useState<[string, string][]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const flash = (msg: string) => {
+    setNote(msg);
+    setTimeout(() => setNote(null), 1800);
+  };
 
   const refresh = async () => setEnvs(await listEnvironments());
   useEffect(() => {
@@ -88,6 +94,7 @@ function EnvironmentsSection() {
     });
     setSelected(saved);
     refresh();
+    flash(t('req.saved'));
   };
 
   const activate = async (id: string) => {
@@ -231,6 +238,7 @@ function EnvironmentsSection() {
           )}
         </div>
       </div>
+      {note && <div className="toast">{note}</div>}
     </section>
   );
 }
@@ -253,6 +261,12 @@ function VariableRulesSection() {
   const [selected, setSelected] = useState<VariableRule | null>(null);
   const [preview, setPreview] = useState<string>('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const flash = (msg: string) => {
+    setNote(msg);
+    setTimeout(() => setNote(null), 1800);
+  };
 
   const refresh = async () => setRules(await listRules());
   useEffect(() => {
@@ -290,6 +304,7 @@ function VariableRulesSection() {
     });
     setSelected(saved);
     refresh();
+    flash(t('req.saved'));
   };
 
   const doPreview = async () => {
@@ -431,6 +446,7 @@ function VariableRulesSection() {
           )}
         </div>
       </div>
+      {note && <div className="toast">{note}</div>}
     </section>
   );
 }
