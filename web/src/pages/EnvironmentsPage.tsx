@@ -59,17 +59,21 @@ function EnvironmentsSection() {
     await reorderEnvironments(next.map((e) => e.id));
   };
 
-  const select = (env: Environment) => {
-    setSelected(env);
-    setRows(Object.entries(env.variables ?? {}));
+  // Re-read from the DB on (re)selection, so variables saved in another window/tab show up here
+  // (this view does not auto-refresh, but switching the selected environment reloads it).
+  const select = async (env: Environment) => {
+    const fresh = await listEnvironments();
+    setEnvs(fresh);
+    const cur = fresh.find((e) => e.id === env.id) ?? env;
+    setSelected(cur);
+    setRows(Object.entries(cur.variables ?? {}));
   };
 
   const add = async () => {
     const name = await prompt({ message: t('env.namePrompt') });
     if (!name) return;
     const env = await createEnvironment({ name, variables: {} });
-    await refresh();
-    select(env);
+    await select(env); // select re-reads the list (which now includes the new env)
   };
 
   const save = async () => {
