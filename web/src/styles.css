@@ -96,11 +96,28 @@ body {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 700;
   padding: 4px 6px;
   letter-spacing: -0.02em;
   white-space: nowrap;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 8px;
+}
+.brand:hover {
+  background: var(--panel-2);
+}
+.brand-logo {
+  display: block;
+  flex: none;
+  border-radius: 5px;
+}
+.brand-collapsed {
+  padding: 4px;
 }
 
 .icon-btn {
@@ -163,6 +180,9 @@ body {
   padding: 9px 0;
 }
 .collapsed .sidebar-top {
+  /* stack the logo above the expand toggle so both fit the narrow rail */
+  flex-direction: column;
+  gap: 8px;
   justify-content: center;
 }
 .collapsed .health-badge {

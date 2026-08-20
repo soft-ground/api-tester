@@ -19,6 +19,10 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   method and URL — before it is sent, and locked entries show a 🔒 in the collection tree. Adds a
   non-destructive DB migration for the endpoint `locked` field.
 
+### Changed
+- The top-left brand is now a logo + wordmark that links to the home view (Collections); when the
+  sidebar is collapsed it shows just the logo, giving the collapsed rail an identity anchor.
+
 ### Fixed
 - The Environments view reloads the selected environment from the database when you (re)select it, so
   variables saved in another window or tab appear (it still does not auto-refresh on its own).

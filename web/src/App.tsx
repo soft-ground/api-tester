@@ -85,6 +85,22 @@ function NotFound() {
   );
 }
 
+// Top-left logo + wordmark, acting as a home link to the default view. When the sidebar is collapsed
+// only the logo shows, so the collapsed rail still has an identity anchor.
+function Brand({ collapsed }: { collapsed?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <Link
+      className={`brand${collapsed ? ' brand-collapsed' : ''}`}
+      to="/collections"
+      title={t('brand')}
+    >
+      <img className="brand-logo" src="/favicon.svg" alt="" width={22} height={22} />
+      {!collapsed && <span className="brand-name">{t('brand')}</span>}
+    </Link>
+  );
+}
+
 export default function App() {
   const { t } = useI18n();
   const [layout, setLayout] = useState<Layout>(
@@ -147,7 +163,7 @@ export default function App() {
     return (
       <div className="app layout-header">
         <header className="topbar">
-          <div className="brand">{t('brand')}</div>
+          <Brand />
           <nav className="topnav">
             <NavItems />
           </nav>
@@ -181,7 +197,7 @@ export default function App() {
     <div className={`app layout-sidebar ${collapsed ? 'collapsed' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar-top">
-          {!collapsed && <div className="brand">{t('brand')}</div>}
+          <Brand collapsed={collapsed} />
           <button
             className="icon-btn"
             title={collapsed ? t('shell.expand') : t('shell.collapse')}
