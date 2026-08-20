@@ -54,6 +54,9 @@ export default function HistoryPage() {
   const [folderSel, setFolderSel] = useState<string>(''); // '' all | 'null' uncategorized | id
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const lastIdxRef = useRef<number | null>(null);
+  // Overflow menu for the selection actions (delete / export, and future ones).
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState<string>(''); // folder-chip key currently under a drag
   const [listWidth, setListWidth] = useState<number>(
     () => Number(localStorage.getItem('historyListWidth')) || 340,
@@ -62,6 +65,27 @@ export default function HistoryPage() {
   useEffect(() => {
     localStorage.setItem('historyView', view);
   }, [view]);
+
+  // Overflow menu: close on outside click / Esc
+  useEffect(() => {
+    if (!actionsMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (
+        actionsMenuRef.current &&
+        !actionsMenuRef.current.contains(e.target as Node)
+      )
+        setActionsMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActionsMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [actionsMenuOpen]);
   useEffect(() => {
     localStorage.setItem('historyListWidth', String(listWidth));
   }, [listWidth]);
@@ -279,6 +303,48 @@ export default function HistoryPage() {
     load();
   };
 
+  // Overflow (⋯) menu holding the non-primary actions. Its items depend on whether
+  // anything is selected; it is placed in row 1 (no selection) or row 2 (selection).
+  // Reusing the collection tree's menu styles keeps it consistent app-wide.
+  const hasSelection = checkedIds.size > 0;
+  const actionsMenu = (
+    <div className="tree-menu hist-menu" ref={actionsMenuRef}>
+      <button
+        className="tree-menu-btn"
+        onClick={() => setActionsMenuOpen((o) => !o)}
+        title={t('hist.moreActions')}
+        aria-label={t('hist.moreActions')}
+        aria-haspopup="menu"
+        aria-expanded={actionsMenuOpen}
+      >
+        ⋯
+      </button>
+      {actionsMenuOpen && (
+        <div className="tree-menu-pop" role="menu">
+          {hasSelection && (
+            <button
+              onClick={() => {
+                setActionsMenuOpen(false);
+                deleteSelected();
+              }}
+            >
+              {t('hist.deleteSelected')}
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setActionsMenuOpen(false);
+              exportXlsx();
+            }}
+          >
+            {/* Excel label stays English regardless of UI language (product convention). */}
+            {hasSelection ? 'Excel (selected)' : 'Excel (all)'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="history-layout">
       <div className="history-list-panel" style={{ width: listWidth }}>
@@ -399,8 +465,9 @@ export default function HistoryPage() {
 
         {items.length > 0 && (
           <div className="hist-toolbar">
-            {/* Row 1: selection status (left) + Clear (right). With no selection the
-                Excel(all) export sits here since there are no per-selection actions. */}
+            {/* Row 1: selection status (left). The select-all checkbox cycles
+                partial -> all -> none, so no separate Clear control is needed.
+                With no selection the overflow menu (export-all) sits here. */}
             <div className="hist-row hist-row-top">
               <label className="hist-selall">
                 <input
@@ -417,25 +484,10 @@ export default function HistoryPage() {
                   ? t('hist.selectedCount', { count: checkedIds.size })
                   : t('hist.selectAll')}
               </label>
-              {checkedIds.size > 0 ? (
-                <button
-                  className="btn-ghost hist-clear"
-                  onClick={() => toggleAll(false)}
-                >
-                  {t('hist.clearSel')}
-                </button>
-              ) : (
-                <button
-                  className="btn-ghost hist-export"
-                  onClick={exportXlsx}
-                  title={t('hist.exportTitle')}
-                >
-                  {/* Label is always English regardless of UI language (product convention). */}
-                  Excel (all)
-                </button>
-              )}
+              {checkedIds.size === 0 && actionsMenu}
             </div>
-            {/* Row 2 (only with a selection): folder move, delete, and Excel export. */}
+            {/* Row 2 (only with a selection): the folder move stays a primary,
+                always-visible control; everything else lives in the overflow menu. */}
             {checkedIds.size > 0 && (
               <div className="hist-row hist-row-actions">
                 <select
@@ -454,16 +506,7 @@ export default function HistoryPage() {
                     </option>
                   ))}
                 </select>
-                <button className="btn-ghost" onClick={deleteSelected}>
-                  {t('hist.deleteSelected')}
-                </button>
-                <button
-                  className="btn-ghost hist-export"
-                  onClick={exportXlsx}
-                  title={t('hist.exportTitle')}
-                >
-                  Excel (selected)
-                </button>
+                {actionsMenu}
               </div>
             )}
           </div>

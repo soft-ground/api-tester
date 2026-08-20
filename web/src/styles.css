@@ -1625,19 +1625,10 @@ textarea:focus {
   gap: 6px;
   cursor: pointer;
 }
-.hist-selactions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.hist-selactions .btn-ghost {
-  padding: 3px 8px;
-}
-.hist-export {
-  padding: 3px 8px;
-  /* fixed width so the label switching (all <-> selected) does not resize/jump the button */
-  min-width: 112px;
-  text-align: center;
+/* The overflow (⋯) button in the history toolbar: match the compact toolbar scale. */
+.hist-menu .tree-menu-btn {
+  padding: 2px 8px;
+  font-size: 14px;
 }
 .history-detail-panel {
   overflow-y: auto;
