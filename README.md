@@ -53,17 +53,11 @@ ownership and a server-side execution model are what matter.
 
 ## Screenshots
 
-_Screenshots live in [`docs/images/`](./docs/images) — see
-[docs/images/README.md](./docs/images/README.md) for the recommended captures and tips. Once the
-PNGs are added, uncomment the block below._
-
-<!--
 | APIs view (tree + builder) | Fields view (typed JSON body) |
 |---|---|
 | ![APIs view](docs/images/collections.png) | ![Fields view](docs/images/fields-view.png) |
 | **Scenario run** | **History → Excel / CSV** |
 | ![Scenario run](docs/images/scenario-run.png) | ![History export](docs/images/history-export.png) |
--->
 
 ---
 
