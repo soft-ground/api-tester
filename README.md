@@ -68,11 +68,15 @@ uncomment the block below._
 ## Features
 
 - **Collections & endpoints** — save and reuse APIs. Build **multi-level groups (folders)** by
-  drag-and-drop (e.g. System > Domain > API, any depth).
+  drag-and-drop (e.g. System > Domain > API, any depth). **Lock** a create/modify/delete (or
+  rarely-run) request so it asks for confirmation — showing the method and URL — before it is sent;
+  locked entries show a 🔒 in the tree.
 - **Proxy execution + history** — the server makes the call for you and stores a snapshot of the
   request/response in the DB. History has **search/filter (method/status/text) and folders**, with
   **multi-select** (Shift-range) to move or delete many entries at once, or **drag a single entry onto
-  a folder** (drop on **+ Folder** to create one).
+  a folder** (drop on **+ Folder** to create one). **Export history to Excel or CSV** — the selected
+  entries, or the whole current filtered set (fetched in full from the server, not just the loaded
+  page).
 - **Environment variables & dynamic values** — per-environment variable sets (with an active
   environment) plus rules (`fixed` / `sequence` / `expression` / `timestamp` / `uuid` / `random`).
   `{{variable}}` is substituted into URL, query, headers, body, and auth. A rule can optionally emit
@@ -91,7 +95,8 @@ uncomment the block below._
 - **Import / export** — import from OpenAPI (Swagger) and curl, copy as curl, export/import a
   full-workspace backup JSON.
 - **Conveniences** — quick request (call once without saving), global search (Ctrl/Cmd+K),
-  **light / dark theme**, and bilingual UI (English / Korean).
+  **copy the actual called URL** from a result (variables already resolved), **light / dark theme**,
+  and bilingual UI (English / Korean).
 
 ---
 
