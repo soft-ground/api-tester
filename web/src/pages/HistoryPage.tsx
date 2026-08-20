@@ -54,6 +54,7 @@ export default function HistoryPage() {
   const [folderSel, setFolderSel] = useState<string>(''); // '' all | 'null' uncategorized | id
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const lastIdxRef = useRef<number | null>(null);
+  const itemsElRef = useRef<HTMLDivElement>(null);
   // Overflow menu for the selection actions (delete / export, and future ones).
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
@@ -112,20 +113,64 @@ export default function HistoryPage() {
     refreshFolders();
   }, []);
 
-  const load = async () => {
-    const params: Record<string, string> = {};
+  // One page of history rows. The server caps `take` at 200; we page through with
+  // skip so the list is not silently limited to the first batch.
+  const PAGE = 50;
+  const loadingMoreRef = useRef(false);
+
+  const buildParams = (skip: number): Record<string, string> => {
+    const params: Record<string, string> = {
+      take: String(PAGE),
+      skip: String(skip),
+    };
     if (method) params.method = method;
     if (status) params.status = status;
     if (q) params.q = q;
     if (view === 'folder' && folderSel !== '') params.folderId = folderSel;
-    const res = await listHistory(params);
+    return params;
+  };
+
+  const load = async () => {
+    const res = await listHistory(buildParams(0));
     setItems(res.items);
     setTotal(res.total);
+  };
+
+  // Append the next page when the list is scrolled near the bottom.
+  const loadMore = async () => {
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    try {
+      const res = await listHistory(buildParams(items.length));
+      setTotal(res.total);
+      setItems((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        return [...prev, ...res.items.filter((it) => !seen.has(it.id))];
+      });
+    } finally {
+      loadingMoreRef.current = false;
+    }
+  };
+
+  const onListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (items.length >= total) return;
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) loadMore();
   };
 
   useEffect(() => {
     load();
   }, [method, status, view, folderSel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // If a page does not fill the scroll area (tall screen / few rows), keep pulling
+  // the next page until the list overflows or everything is loaded.
+  useEffect(() => {
+    const el = itemsElRef.current;
+    if (!el) return;
+    if (items.length < total && el.scrollHeight <= el.clientHeight + 4) {
+      loadMore();
+    }
+  }, [items, total]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the checked set consistent with what is currently listed (drop ids filtered away).
   useEffect(() => {
@@ -507,7 +552,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        <div className="history-items">
+        <div className="history-items" onScroll={onListScroll} ref={itemsElRef}>
           {items.length === 0 && (
             <div className="tree-empty">{t('hist.empty')}</div>
           )}

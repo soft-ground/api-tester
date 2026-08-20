@@ -505,6 +505,13 @@ textarea:focus {
 .history-layout .history-list-panel {
   flex-shrink: 0;
   border-right: none;
+  /* The panel itself does not scroll: the filter bars / toolbar form a fixed
+     header and only the items list (below) scrolls. This avoids sticky headers
+     (and their z-index overlay glitches) entirely. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 .history-layout .history-detail-panel {
   flex: 1;
@@ -1435,9 +1442,8 @@ textarea:focus {
   gap: 8px;
   padding: 12px;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
   background: var(--panel);
+  flex-shrink: 0;
 }
 .filter-q {
   flex: 1;
@@ -1445,10 +1451,6 @@ textarea:focus {
 .filter-total {
   font-size: 12px;
   color: var(--muted);
-}
-/* View toggle + folder bar */
-.filter-bar2 {
-  top: 45px;
 }
 .view-toggle {
   display: flex;
@@ -1476,6 +1478,7 @@ textarea:focus {
   gap: 5px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .folder-chip {
   display: inline-flex;
@@ -1525,6 +1528,12 @@ textarea:focus {
   color: var(--down);
 }
 
+/* The only scrolling region of the list panel; the header above it stays fixed. */
+.history-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 .history-item {
   position: relative;
   display: grid;
@@ -1604,6 +1613,7 @@ textarea:focus {
   font-size: 12px;
   color: var(--muted);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 /* Selection status stays on the left; whatever comes next (the folder-move
    dropdown when a selection exists, otherwise the ⋯ menu) is pushed to the
