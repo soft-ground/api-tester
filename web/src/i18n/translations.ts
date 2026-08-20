@@ -86,6 +86,7 @@ const ko: Dict = {
   'col.deleteCollection': '컬렉션을 삭제할까요? (소속 API 는 미분류로 이동)',
 
   // request builder
+  'req.copyUrl': 'URL 복사',
   'req.copyCurl': 'curl 복사',
   'req.revert': '다시 불러오기',
   'req.revertTitle': '저장된 API 정의를 다시 불러오기(작성 중인 수정 취소)',
@@ -446,6 +447,7 @@ const en: Dict = {
   'col.deleteApi': 'Delete this API?',
   'col.deleteCollection': 'Delete this collection? (its APIs move to Uncategorized)',
 
+  'req.copyUrl': 'Copy URL',
   'req.copyCurl': 'Copy as curl',
   'req.revert': 'Reload',
   'req.revertTitle': 'Reload the saved API definition (discard edits)',
