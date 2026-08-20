@@ -1864,10 +1864,10 @@ textarea:focus {
   font-size: 12.5px;
   word-break: break-all;
   color: var(--text);
-  flex: 1;
   min-width: 0;
 }
-/* Copy the actual (variable-resolved) request URL to the clipboard. */
+/* Copy the actual (variable-resolved) request URL to the clipboard. Sits right
+   after the URL text (not pinned to the far right of the row). */
 .sent-req-url .url-copy {
   display: inline-flex;
   align-items: center;
