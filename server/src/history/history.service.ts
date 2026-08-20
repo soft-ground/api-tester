@@ -141,6 +141,61 @@ export class HistoryService {
     return { items, total, take, skip };
   }
 
+  // Full rows (with request/response bodies + headers) for Excel export: specific ids, or every row
+  // matching the same filters as list() (no pagination, capped for safety).
+  async exportRows(query: HistoryQuery & { ids?: string[] }) {
+    let where: Prisma.CallHistoryWhereInput;
+    if (query.ids && query.ids.length) {
+      where = { id: { in: query.ids } };
+    } else {
+      where = {};
+      if (query.method) where.reqMethod = query.method.toUpperCase();
+      if (query.endpointId) where.endpointId = query.endpointId;
+      if (query.folderId !== undefined && query.folderId !== '') {
+        where.folderId = query.folderId === 'null' ? null : query.folderId;
+      }
+      if (query.status) {
+        const s = query.status;
+        if (/^[2345]xx$/i.test(s)) {
+          const base = Number(s[0]) * 100;
+          where.resStatus = { gte: base, lt: base + 100 };
+        } else if (/^\d{3}$/.test(s)) {
+          where.resStatus = Number(s);
+        }
+      }
+      if (query.q) {
+        where.OR = [
+          { reqUrl: { contains: query.q, mode: 'insensitive' } },
+          { reqBody: { contains: query.q, mode: 'insensitive' } },
+          { resBody: { contains: query.q, mode: 'insensitive' } },
+        ];
+      }
+    }
+    return this.prisma.callHistory.findMany({
+      where,
+      orderBy: { executedAt: 'desc' },
+      take: 10000,
+      select: {
+        executedAt: true,
+        reqMethod: true,
+        reqUrl: true,
+        resStatus: true,
+        success: true,
+        error: true,
+        durationMs: true,
+        resSize: true,
+        resContentType: true,
+        resBodyEncoding: true,
+        resTruncated: true,
+        reqHeaders: true,
+        reqBody: true,
+        resHeaders: true,
+        resBody: true,
+        folder: { select: { name: true } },
+      },
+    });
+  }
+
   async get(id: string) {
     // The raw binary bytes (resBodyBytes) are not included in the JSON response (large).
     // Fetched only via the download route (getBody). All other scalars + metadata are included.

@@ -10,6 +10,11 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 ## [Unreleased]
 
 ### Added
+- **Export History to Excel** — the History toolbar has an Excel button that downloads the selected
+  entries (or the whole current filtered list) as a `.xlsx`: one row per call with test date/time,
+  method, URL, status, result, duration, size, content-type, request/response headers and bodies, and
+  folder. The server returns the full matching set (not just the loaded page); over-long cells are
+  trimmed to Excel's limit and binary responses are summarized.
 - A **not-found page** for unknown URLs — instead of a blank content area, an unmatched route now
   shows a 404 with the attempted path and a link back to the app (the nav stays available too).
 - A **favicon** (an SVG `{ }` mark in the accent color) so browser tabs show an identifiable icon

@@ -1610,9 +1610,15 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
 }
 .hist-selactions .btn-ghost {
+  padding: 3px 8px;
+}
+/* pushes the selection actions + Excel export to the right of the toolbar */
+.hist-spacer {
+  flex: 1;
+}
+.hist-export {
   padding: 3px 8px;
 }
 .history-detail-panel {

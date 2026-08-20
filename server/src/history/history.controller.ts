@@ -65,6 +65,12 @@ export class HistoryController {
     return this.service.remove(body?.ids ?? []);
   }
 
+  // Full rows (with bodies/headers) for export — selected ids, or all rows matching the filters.
+  @Post('export')
+  exportRows(@Body() body: HistoryQuery & { ids?: string[] }) {
+    return this.service.exportRows(body ?? {});
+  }
+
   // Stream the raw response body (text/binary download/inline). Before :id.
   @Get(':id/body')
   async body(@Param('id') id: string, @Res() res: Response) {

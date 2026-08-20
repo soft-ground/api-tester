@@ -566,3 +566,34 @@ export async function moveHistory(ids: string[], folderId: string | null) {
 export async function deleteHistory(ids: string[]) {
   await api.post('/history/delete', { ids });
 }
+
+// Full history rows (with bodies/headers) for Excel export.
+export interface HistoryExportRow {
+  executedAt: string;
+  reqMethod: string;
+  reqUrl: string;
+  resStatus: number | null;
+  success: boolean;
+  error: string | null;
+  durationMs: number | null;
+  resSize: number | null;
+  resContentType: string | null;
+  resBodyEncoding: string;
+  resTruncated: boolean;
+  reqHeaders: unknown;
+  reqBody: string | null;
+  resHeaders: unknown;
+  resBody: string | null;
+  folder: { name: string } | null;
+}
+
+export async function exportHistory(payload: {
+  ids?: string[];
+  method?: string;
+  status?: string;
+  q?: string;
+  folderId?: string;
+}): Promise<HistoryExportRow[]> {
+  const { data } = await api.post<HistoryExportRow[]>('/history/export', payload);
+  return data;
+}

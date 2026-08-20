@@ -12,6 +12,19 @@ export async function exportJsonToXlsx(data: unknown, filename: string): Promise
   XLSX.writeFile(wb, filename);
 }
 
+// Write a single sheet from an array-of-arrays (header row + data rows) and download it.
+export async function writeSheetXlsx(
+  rows: unknown[][],
+  sheetName: string,
+  filename: string,
+): Promise<void> {
+  const XLSX = await import('xlsx');
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
+}
+
 // response-YYYYMMDD-HHmmss.xlsx
 export function excelFilename(prefix = 'response'): string {
   const d = new Date();

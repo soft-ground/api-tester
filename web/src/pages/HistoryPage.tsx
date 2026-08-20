@@ -8,6 +8,7 @@ import {
   deleteHistory,
   deleteHistoryFolder,
   execute,
+  exportHistory,
   getHistory,
   listHistory,
   listHistoryFolders,
@@ -17,6 +18,8 @@ import {
 import ResponseViewer from '../components/ResponseViewer';
 import { useDialog } from '../components/DialogProvider';
 import { usePickVariable } from '../hooks/usePickVariable';
+import { excelFilename, writeSheetXlsx } from '../lib/exportExcel';
+import { historyRowsToAoa } from '../lib/historyExcel';
 import { useT } from '../i18n';
 
 const METHODS = ['', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -150,6 +153,39 @@ export default function HistoryPage() {
     await moveHistory([...checkedIds], val === '__none' ? null : val);
     toggleAll(false);
     await Promise.all([load(), refreshFolders()]);
+  };
+
+  // Export to Excel: the checked entries, or (when none are checked) every entry matching the
+  // current filters. The server returns the full rows (with bodies), not just the loaded page.
+  const exportXlsx = async () => {
+    const payload =
+      checkedIds.size > 0
+        ? { ids: [...checkedIds] }
+        : {
+            method: method || undefined,
+            status: status || undefined,
+            q: q || undefined,
+            folderId: view === 'folder' && folderSel !== '' ? folderSel : undefined,
+          };
+    const rows = await exportHistory(payload);
+    const aoa = historyRowsToAoa(rows, {
+      date: t('hist.col.date'),
+      time: t('hist.col.time'),
+      method: t('hist.col.method'),
+      url: t('hist.col.url'),
+      status: t('hist.col.status'),
+      result: t('hist.col.result'),
+      duration: t('hist.col.duration'),
+      size: t('hist.col.size'),
+      contentType: t('hist.col.contentType'),
+      reqHeaders: t('hist.col.reqHeaders'),
+      reqBody: t('hist.col.reqBody'),
+      resHeaders: t('hist.col.resHeaders'),
+      resBody: t('hist.col.resBody'),
+      folder: t('hist.col.folder'),
+      ok: t('hist.resultOk'),
+    });
+    await writeSheetXlsx(aoa, 'History', excelFilename('history'));
   };
 
   const deleteSelected = async () => {
@@ -378,6 +414,7 @@ export default function HistoryPage() {
                 ? t('hist.selectedCount', { count: checkedIds.size })
                 : t('hist.selectAll')}
             </label>
+            <span className="hist-spacer" />
             {checkedIds.size > 0 && (
               <div className="hist-selactions">
                 <select
@@ -404,6 +441,13 @@ export default function HistoryPage() {
                 </button>
               </div>
             )}
+            <button
+              className="btn-ghost hist-export"
+              onClick={exportXlsx}
+              title={t('hist.exportTitle')}
+            >
+              {t('hist.exportExcel')}
+            </button>
           </div>
         )}
 
