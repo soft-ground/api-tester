@@ -19,6 +19,7 @@ import ResponseViewer from '../components/ResponseViewer';
 import { useDialog } from '../components/DialogProvider';
 import { usePickVariable } from '../hooks/usePickVariable';
 import { excelFilename, writeSheetXlsx } from '../lib/exportExcel';
+import { aoaToCsv, csvFilename, downloadCsv } from '../lib/exportCsv';
 import { historyRowsToAoa } from '../lib/historyExcel';
 import { useT } from '../i18n';
 
@@ -224,9 +225,10 @@ export default function HistoryPage() {
     await Promise.all([load(), refreshFolders()]);
   };
 
-  // Export to Excel: the checked entries, or (when none are checked) every entry matching the
-  // current filters. The server returns the full rows (with bodies), not just the loaded page.
-  const exportXlsx = async () => {
+  // Build the export rows (header + data) for the current selection/filters. The checked
+  // entries, or (when none are checked) every entry matching the current filters. The server
+  // returns the full rows (with bodies), not just the loaded page. Shared by Excel and CSV.
+  const buildExportAoa = async () => {
     const payload =
       checkedIds.size > 0
         ? { ids: [...checkedIds] }
@@ -237,7 +239,7 @@ export default function HistoryPage() {
             folderId: view === 'folder' && folderSel !== '' ? folderSel : undefined,
           };
     const rows = await exportHistory(payload);
-    const aoa = historyRowsToAoa(rows, {
+    return historyRowsToAoa(rows, {
       date: t('hist.col.date'),
       time: t('hist.col.time'),
       method: t('hist.col.method'),
@@ -254,7 +256,14 @@ export default function HistoryPage() {
       folder: t('hist.col.folder'),
       ok: t('hist.resultOk'),
     });
-    await writeSheetXlsx(aoa, 'History', excelFilename('history'));
+  };
+
+  const exportXlsx = async () => {
+    await writeSheetXlsx(await buildExportAoa(), 'History', excelFilename('history'));
+  };
+
+  const exportCsv = async () => {
+    downloadCsv(aoaToCsv(await buildExportAoa()), csvFilename('history'));
   };
 
   const deleteSelected = async () => {
@@ -367,14 +376,17 @@ export default function HistoryPage() {
       {actionsMenuOpen && (
         <div className="tree-menu-pop" role="menu">
           {hasSelection && (
-            <button
-              onClick={() => {
-                setActionsMenuOpen(false);
-                deleteSelected();
-              }}
-            >
-              {t('hist.deleteSelected')}
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setActionsMenuOpen(false);
+                  deleteSelected();
+                }}
+              >
+                {t('hist.deleteSelected')}
+              </button>
+              <div className="tree-menu-sep" />
+            </>
           )}
           <button
             onClick={() => {
@@ -382,8 +394,16 @@ export default function HistoryPage() {
               exportXlsx();
             }}
           >
-            {/* Excel label stays English regardless of UI language (product convention). */}
+            {/* Export labels stay English regardless of UI language (product convention). */}
             {hasSelection ? 'Excel (selected)' : 'Excel (all)'}
+          </button>
+          <button
+            onClick={() => {
+              setActionsMenuOpen(false);
+              exportCsv();
+            }}
+          >
+            {hasSelection ? 'CSV (selected)' : 'CSV (all)'}
           </button>
         </div>
       )}
