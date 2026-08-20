@@ -10,6 +10,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 ## [Unreleased]
 
 ### Added
+- A **favicon** (an SVG `{ }` mark in the accent color) so browser tabs show an identifiable icon
+  instead of a blank one (and browsers no longer 404 on `/favicon.ico`).
 - **Lock an endpoint** to guard against accidental runs. A lock toggle next to the request name marks
   create/modify/delete (or rarely-run) APIs; a locked request asks for confirmation — showing the
   method and URL — before it is sent, and locked entries show a 🔒 in the collection tree. Adds a
