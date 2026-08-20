@@ -172,7 +172,7 @@ cp .env.example .env
 docker compose -f docker-compose.ghcr.yml up -d
 ```
 
-Images are published on each release. Pin a specific version by replacing `:latest` with `:1.3.0`
+Images are published on each release. Pin a specific version by replacing `:latest` with `:1.7.0`
 in [docker-compose.ghcr.yml](./docker-compose.ghcr.yml).
 
 ---
