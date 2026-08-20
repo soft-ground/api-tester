@@ -399,24 +399,45 @@ export default function HistoryPage() {
 
         {items.length > 0 && (
           <div className="hist-toolbar">
-            <label className="hist-selall">
-              <input
-                type="checkbox"
-                checked={checkedIds.size === items.length}
-                ref={(cb) => {
-                  if (cb)
-                    cb.indeterminate =
-                      checkedIds.size > 0 && checkedIds.size < items.length;
-                }}
-                onChange={(e) => toggleAll(e.target.checked)}
-              />
-              {checkedIds.size > 0
-                ? t('hist.selectedCount', { count: checkedIds.size })
-                : t('hist.selectAll')}
-            </label>
-            <div className="hist-toolbar-right">
+            {/* Row 1: selection status (left) + Clear (right). With no selection the
+                Excel(all) export sits here since there are no per-selection actions. */}
+            <div className="hist-row hist-row-top">
+              <label className="hist-selall">
+                <input
+                  type="checkbox"
+                  checked={checkedIds.size === items.length}
+                  ref={(cb) => {
+                    if (cb)
+                      cb.indeterminate =
+                        checkedIds.size > 0 && checkedIds.size < items.length;
+                  }}
+                  onChange={(e) => toggleAll(e.target.checked)}
+                />
+                {checkedIds.size > 0
+                  ? t('hist.selectedCount', { count: checkedIds.size })
+                  : t('hist.selectAll')}
+              </label>
+              {checkedIds.size > 0 ? (
+                <button
+                  className="btn-ghost hist-clear"
+                  onClick={() => toggleAll(false)}
+                >
+                  {t('hist.clearSel')}
+                </button>
+              ) : (
+                <button
+                  className="btn-ghost hist-export"
+                  onClick={exportXlsx}
+                  title={t('hist.exportTitle')}
+                >
+                  {/* Label is always English regardless of UI language (product convention). */}
+                  Excel (all)
+                </button>
+              )}
+            </div>
+            {/* Row 2 (only with a selection): folder move, delete, and Excel export. */}
             {checkedIds.size > 0 && (
-              <div className="hist-selactions">
+              <div className="hist-row hist-row-actions">
                 <select
                   className="hi-move"
                   value=""
@@ -436,20 +457,15 @@ export default function HistoryPage() {
                 <button className="btn-ghost" onClick={deleteSelected}>
                   {t('hist.deleteSelected')}
                 </button>
-                <button className="btn-ghost" onClick={() => toggleAll(false)}>
-                  {t('hist.clearSel')}
+                <button
+                  className="btn-ghost hist-export"
+                  onClick={exportXlsx}
+                  title={t('hist.exportTitle')}
+                >
+                  Excel (selected)
                 </button>
               </div>
             )}
-            <button
-              className="btn-ghost hist-export"
-              onClick={exportXlsx}
-              title={t('hist.exportTitle')}
-            >
-              {/* Label is always English regardless of UI language (product convention). */}
-              {checkedIds.size > 0 ? 'Excel (selected)' : 'Excel (all)'}
-            </button>
-            </div>
           </div>
         )}
 
