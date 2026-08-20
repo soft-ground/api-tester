@@ -948,14 +948,6 @@ textarea:focus {
   font-weight: 700;
   min-width: 90px;
 }
-/* Small icon button to copy the full request URL (baseUrl + path) to the clipboard. */
-.req-url-row .url-copy {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
-  flex-shrink: 0;
-}
 .base-url {
   flex: 1;
 }
@@ -1872,6 +1864,17 @@ textarea:focus {
   font-size: 12.5px;
   word-break: break-all;
   color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+/* Copy the actual (variable-resolved) request URL to the clipboard. */
+.sent-req-url .url-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 .sent-headers {
   font-size: 12px;

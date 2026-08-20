@@ -49,7 +49,13 @@ function SentRequest({
 }) {
   const t = useT();
   const [bodyOpen, setBodyOpen] = useState(defaultOpen);
+  const [urlCopied, setUrlCopied] = useState(false);
   const headerEntries = Object.entries(request.headers ?? {});
+  const copyUrl = () => {
+    navigator.clipboard.writeText(request.url);
+    setUrlCopied(true);
+    setTimeout(() => setUrlCopied(false), 1500);
+  };
   return (
     <div className="sent-req">
       <div className="sent-req-label">{t('resp.request')}</div>
@@ -59,6 +65,44 @@ function SentRequest({
             {request.method}
           </span>
           <span className="sent-url-text">{request.url}</span>
+          <button
+            type="button"
+            className="btn-ghost url-copy"
+            onClick={copyUrl}
+            title={t('req.copyUrl')}
+            aria-label={t('req.copyUrl')}
+          >
+            {urlCopied ? (
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            )}
+          </button>
         </div>
         {headerEntries.length > 0 && (
           <table className="kv-table sent-headers">
