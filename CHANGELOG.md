@@ -10,6 +10,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 ## [Unreleased]
 
 ### Added
+- A **not-found page** for unknown URLs — instead of a blank content area, an unmatched route now
+  shows a 404 with the attempted path and a link back to the app (the nav stays available too).
 - A **favicon** (an SVG `{ }` mark in the accent color) so browser tabs show an identifiable icon
   instead of a blank one (and browsers no longer 404 on `/favicon.ico`).
 - **Lock an endpoint** to guard against accidental runs. A lock toggle next to the request name marks

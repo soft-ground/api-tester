@@ -33,6 +33,8 @@ const ko: Dict = {
   'shell.searchTitle': '전체 검색 (Ctrl/⌘+K)',
   'shell.language': '언어',
   'shell.theme': '테마 전환 (라이트/다크)',
+  'shell.notFound': '요청하신 페이지를 찾을 수 없습니다.',
+  'shell.notFoundHome': '홈으로 가기',
 
   // common
   'common.save': '저장',
@@ -379,6 +381,8 @@ const en: Dict = {
   'shell.searchTitle': 'Global search (Ctrl/⌘+K)',
   'shell.language': 'Language',
   'shell.theme': 'Toggle theme (light/dark)',
+  'shell.notFound': "The page you requested was not found.",
+  'shell.notFoundHome': 'Go to the app',
 
   'common.save': 'Save',
   'common.saving': 'Saving…',

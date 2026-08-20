@@ -295,6 +295,40 @@ body {
   border: 1px dashed var(--border);
   border-radius: 12px;
 }
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--muted);
+}
+.nf-code {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.nf-msg {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.nf-path {
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.not-found .btn {
+  margin-top: 6px;
+  display: inline-block;
+  text-decoration: none;
+}
 
 /* ============ Shared controls ============ */
 .content {

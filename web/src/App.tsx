@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom';
 import HealthBadge from './components/HealthBadge';
 import SearchModal from './components/SearchModal';
 import CollectionsPage from './pages/CollectionsPage';
@@ -62,6 +69,22 @@ function LangSelect() {
   );
 }
 
+// Catch-all for unknown client-side routes (nginx already falls back to index.html for deep links).
+function NotFound() {
+  const { t } = useI18n();
+  const loc = useLocation();
+  return (
+    <div className="not-found">
+      <div className="nf-code">404</div>
+      <p className="nf-msg">{t('shell.notFound')}</p>
+      <code className="nf-path">{loc.pathname}</code>
+      <Link className="btn" to="/collections">
+        {t('shell.notFoundHome')}
+      </Link>
+    </div>
+  );
+}
+
 export default function App() {
   const { t } = useI18n();
   const [layout, setLayout] = useState<Layout>(
@@ -116,6 +139,7 @@ export default function App() {
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/scenarios" element={<ScenariosPage />} />
       <Route path="/environments" element={<EnvironmentsPage />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 
