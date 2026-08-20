@@ -429,15 +429,30 @@ Commit the generated folder under `server/prisma/migrations/` along with the sch
 
 ### Tests
 
-The core pure logic (expression engine, JSONPath, assertions, curl/OpenAPI parsers) has unit tests
-(Vitest).
+The core pure logic (expression engine, JSONPath, assertions, curl/OpenAPI parsers) has **unit
+tests** (Vitest); the DB-coupled services (endpoints, variable resolution, backup import) have
+**integration tests** that run against a throwaway Postgres.
 
 ```bash
 cd server
 npm install
-npm test            # run once
+npm test            # unit tests (no database)
 npm run test:watch  # watch mode
 ```
+
+Integration tests need a `DATABASE_URL` pointing at a **test** database (never your real one) with
+migrations applied:
+
+```bash
+# with the Docker stack running, against a separate test database on the same Postgres
+docker exec api-tester-db psql -U "$POSTGRES_USER" -c 'CREATE DATABASE apitester_test'
+docker run --rm --network api-tester_default -v "$PWD/server:/app" -w /app \
+  -e DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/apitester_test?schema=public" \
+  node:20 sh -lc "npx prisma generate && npx prisma migrate deploy && npm run test:integration"
+```
+
+CI runs the unit tests, the integration tests (with a Postgres service), the web type-check, and a
+Docker build on every push/PR.
 
 ---
 
