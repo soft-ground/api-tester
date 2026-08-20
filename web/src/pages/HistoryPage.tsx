@@ -447,7 +447,7 @@ export default function HistoryPage() {
               title={t('hist.exportTitle')}
             >
               {checkedIds.size > 0
-                ? t('hist.exportExcelN', { count: checkedIds.size })
+                ? t('hist.exportExcelSel')
                 : t('hist.exportExcel')}
             </button>
           </div>

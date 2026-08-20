@@ -1620,6 +1620,9 @@ textarea:focus {
 }
 .hist-export {
   padding: 3px 8px;
+  /* fixed width so the label switching (all <-> selected) does not resize/jump the button */
+  min-width: 96px;
+  text-align: center;
 }
 .history-detail-panel {
   overflow-y: auto;
