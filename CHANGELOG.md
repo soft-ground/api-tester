@@ -9,6 +9,8 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-08-20
+
 ### Added
 - **Export History to Excel or CSV** — the History selection menu can download the selected entries
   (or the whole current filtered list) as `.xlsx` **or** `.csv`: one row per call with test
@@ -24,12 +26,24 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
   create/modify/delete (or rarely-run) APIs; a locked request asks for confirmation — showing the
   method and URL — before it is sent, and locked entries show a 🔒 in the collection tree. Adds a
   non-destructive DB migration for the endpoint `locked` field.
+- **Copy the request URL** — a copy button on a result's Request block copies the actual called URL,
+  with variables already resolved, so you no longer have to drag-select the text and Ctrl+C it.
 
 ### Changed
 - The top-left brand is now a logo + wordmark that links to the home view (Collections); when the
   sidebar is collapsed it shows just the logo, giving the collapsed rail an identity anchor.
+- **History list: a fixed filter header and a tidier selection toolbar.** The filter bars and toolbar
+  stay put while only the entry list scrolls (previously the whole panel scrolled and the sticky
+  filters could be overlapped by rows). The select-all checkbox already cycles all ↔ none, so the
+  separate Clear button was removed; the folder-move dropdown stays visible and the remaining actions
+  (Delete, Excel, CSV) fold into a `⋯` overflow menu.
 
 ### Fixed
+- **History showed only the first 50 entries.** The list now pages through the rest as you scroll
+  (infinite scroll) and stops at the real total, instead of silently capping at the first page.
+- **Native dropdowns rendered in light mode on the dark theme** — an open `<select>` (e.g. the
+  history folder-move) showed a white highlighted row. The page now declares its `color-scheme`, so
+  dropdown popups, their highlight, and scrollbars follow the active light/dark theme.
 - The Environments view reloads the selected environment from the database when you (re)select it, so
   variables saved in another window or tab appear (it still does not auto-refresh on its own).
 - Saving environment variables or a dynamic-value rule now shows a "Saved" toast, so it is clear the
@@ -125,7 +139,8 @@ Initial public open-source release (SOFT GROUND, MIT).
 - Import from OpenAPI (Swagger) and curl; full-workspace backup import/export (merge-only).
 - Self-hosted Docker deployment and a bilingual (English / Korean) UI.
 
-[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/soft-ground/api-tester/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/soft-ground/api-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/soft-ground/api-tester/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/soft-ground/api-tester/compare/v1.3.1...v1.4.0

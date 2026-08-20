@@ -1,6 +1,6 @@
 {
   "name": "api-tester-server",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "API Tester backend (NestJS + Prisma)",
   "private": true,
   "scripts": {
