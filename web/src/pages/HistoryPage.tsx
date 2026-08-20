@@ -465,50 +465,45 @@ export default function HistoryPage() {
 
         {items.length > 0 && (
           <div className="hist-toolbar">
-            {/* Row 1: selection status (left). The select-all checkbox cycles
-                partial -> all -> none, so no separate Clear control is needed.
-                With no selection the overflow menu (export-all) sits here. */}
-            <div className="hist-row hist-row-top">
-              <label className="hist-selall">
-                <input
-                  type="checkbox"
-                  checked={checkedIds.size === items.length}
-                  ref={(cb) => {
-                    if (cb)
-                      cb.indeterminate =
-                        checkedIds.size > 0 && checkedIds.size < items.length;
-                  }}
-                  onChange={(e) => toggleAll(e.target.checked)}
-                />
-                {checkedIds.size > 0
-                  ? t('hist.selectedCount', { count: checkedIds.size })
-                  : t('hist.selectAll')}
-              </label>
-              {checkedIds.size === 0 && actionsMenu}
-            </div>
-            {/* Row 2 (only with a selection): the folder move stays a primary,
-                always-visible control; everything else lives in the overflow menu. */}
+            {/* Single row: selection status on the left; the folder-move dropdown
+                (only with a selection) and the ⋯ overflow menu on the right. The
+                select-all checkbox cycles partial -> all -> none, so no Clear is
+                needed. The element right after the label is pushed to the right edge
+                via CSS, so it works whether that is the dropdown or the menu. */}
+            <label className="hist-selall">
+              <input
+                type="checkbox"
+                checked={checkedIds.size === items.length}
+                ref={(cb) => {
+                  if (cb)
+                    cb.indeterminate =
+                      checkedIds.size > 0 && checkedIds.size < items.length;
+                }}
+                onChange={(e) => toggleAll(e.target.checked)}
+              />
+              {checkedIds.size > 0
+                ? t('hist.selectedCount', { count: checkedIds.size })
+                : t('hist.selectAll')}
+            </label>
             {checkedIds.size > 0 && (
-              <div className="hist-row hist-row-actions">
-                <select
-                  className="hi-move"
-                  value=""
-                  onChange={(e) => moveSelected(e.target.value)}
-                  title={t('hist.moveSelected')}
-                >
-                  <option value="" disabled>
-                    {t('hist.moveSelected')}
+              <select
+                className="hi-move"
+                value=""
+                onChange={(e) => moveSelected(e.target.value)}
+                title={t('hist.moveSelected')}
+              >
+                <option value="" disabled>
+                  {t('hist.moveSelected')}
+                </option>
+                <option value="__none">{t('hist.uncategorized')}</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
                   </option>
-                  <option value="__none">{t('hist.uncategorized')}</option>
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-                {actionsMenu}
-              </div>
+                ))}
+              </select>
             )}
+            {actionsMenu}
           </div>
         )}
 

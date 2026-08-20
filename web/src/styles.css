@@ -1597,27 +1597,19 @@ textarea:focus {
 
 .hist-toolbar {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted);
-}
-/* Row 1: selection status on the left, its action (Clear / Excel(all)) on the right. */
-.hist-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   flex-wrap: wrap;
 }
-.hist-row-top {
-  justify-content: space-between;
-}
-/* Row 2: folder move + delete + Excel(selected), kept together on the right edge. */
-.hist-row-actions {
-  justify-content: flex-end;
+/* Selection status stays on the left; whatever comes next (the folder-move
+   dropdown when a selection exists, otherwise the ⋯ menu) is pushed to the
+   right edge, carrying the rest of the right cluster with it. */
+.hist-selall + * {
+  margin-left: auto;
 }
 .hist-selall {
   display: inline-flex;
