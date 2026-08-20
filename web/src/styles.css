@@ -1614,14 +1614,21 @@ textarea:focus {
 .hist-selactions .btn-ghost {
   padding: 3px 8px;
 }
-/* pushes the selection actions + Excel export to the right of the toolbar */
-.hist-spacer {
-  flex: 1;
+/* Right cluster: selection actions + Excel export, kept on the right edge of the
+   toolbar. It wraps as a unit, and margin-left:auto keeps it right-aligned even when
+   it drops to its own line, so the Excel button is always easy to find. */
+.hist-toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .hist-export {
   padding: 3px 8px;
   /* fixed width so the label switching (all <-> selected) does not resize/jump the button */
-  min-width: 96px;
+  min-width: 112px;
   text-align: center;
 }
 .history-detail-panel {

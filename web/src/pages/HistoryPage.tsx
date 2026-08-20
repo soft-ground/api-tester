@@ -414,7 +414,7 @@ export default function HistoryPage() {
                 ? t('hist.selectedCount', { count: checkedIds.size })
                 : t('hist.selectAll')}
             </label>
-            <span className="hist-spacer" />
+            <div className="hist-toolbar-right">
             {checkedIds.size > 0 && (
               <div className="hist-selactions">
                 <select
@@ -446,10 +446,10 @@ export default function HistoryPage() {
               onClick={exportXlsx}
               title={t('hist.exportTitle')}
             >
-              {checkedIds.size > 0
-                ? t('hist.exportExcelSel')
-                : t('hist.exportExcel')}
+              {/* Label is always English regardless of UI language (product convention). */}
+              {checkedIds.size > 0 ? 'Excel (selected)' : 'Excel (all)'}
             </button>
+            </div>
           </div>
         )}
 
