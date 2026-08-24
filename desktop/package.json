@@ -11,6 +11,7 @@
     "build:deps": "npm run build:server && npm run build:web",
     "start": "electron .",
     "dev": "npm run build && electron .",
+    "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"
   },
   "devDependencies": {

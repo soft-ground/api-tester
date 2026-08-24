@@ -8,13 +8,12 @@ productName: API Tester
 directories:
   output: release
 
-# The Electron main/preload are plain JS — fine inside the asar archive.
-asar: true
-# ...but native/spawned binaries cannot run from inside the asar, so unpack the embedded
-# Postgres package (it launches real postgres/initdb executables) to app.asar.unpacked.
-asarUnpack:
-  - "**/node_modules/embedded-postgres/**"
-  - "**/node_modules/@embedded-postgres/**"
+# asar is disabled: embedded-postgres resolves its postgres/initdb binaries via
+# import.meta.url, which points inside app.asar even when the package is asar-unpacked
+# (an ESM/asar gap), so spawning them fails with ENOENT. Keeping everything as real files
+# on disk makes path resolution and child-process spawning work reliably. The tradeoff is
+# a few more files / marginally slower startup — fine for a spawn-heavy desktop tool.
+asar: false
 
 files:
   - dist/**/*        # compiled Electron main + preload
