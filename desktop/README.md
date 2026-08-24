@@ -37,11 +37,13 @@ not supported on SQLite**, so moving to SQLite would mean converting every one o
 `String` with manual (de)serialization across all modules — an invasive refactor that also
 forks the data layer away from the Docker build (Prisma migrations are per-provider).
 
-So the plan is to **bundle a Postgres binary** and manage it as a child process pointing at a
-data directory under the app's `userData`. This keeps the schema, migrations, and server code
-**identical** to the Docker build — one codebase for both distributions. (`src/db.ts`,
-milestone 2, will own that lifecycle: init the data dir on first run, start/stop `postgres`,
-run `prisma migrate deploy`.)
+So we **bundle a Postgres binary** (`embedded-postgres`) and manage it as a child process
+pointing at a data directory under the app's `userData`. This keeps the schema, migrations, and
+server code **identical** to the Docker build — one codebase for both distributions. `src/db.ts`
+owns that lifecycle: initialise the data dir on first run, start/stop `postgres`, ensure the app
+database exists; `main.ts` then runs `prisma migrate deploy` against it before starting the
+server. The user never sets `DATABASE_URL`. (`embedded-postgres` is ESM-only, so it is loaded
+with a dynamic `import()` from the CommonJS main.)
 
 ### 2. Serving the UI — let Nest serve `web/dist`
 
@@ -67,33 +69,36 @@ Then `main.ts` sets `STATIC_DIR` to the bundled `web` resources and the window l
 |---|------|-------|
 | 1 | Electron boots Nest as a child process, health-gated window | **done** |
 | 2 | Nest serves the web UI (`STATIC_DIR`) so the window shows the real app | **done** |
-| 3 | Embedded Postgres (`src/db.ts`) — drops the manual `DATABASE_URL` step | planned |
+| 3 | Embedded Postgres (`src/db.ts`) + auto `migrate deploy` — no external DB, no `DATABASE_URL` | **done** |
 | 4 | `electron-builder` installers + code signing / notarization + auto-update | draft config |
 
-## Run the milestone-1 scaffold (dev)
+## Run (dev)
+
+No Docker, no database setup — the app starts its own embedded Postgres.
 
 ```bash
-# 1) build the server and web once (from the repo root)
-cd server && npm install && npm run build && cd ..
-cd web    && npm install && npm run build && cd ..
+# 1) build the server + web (once, or after they change). From the desktop folder:
+cd desktop && npm install
+npm run build:deps        # builds ../server and ../web
+npm run build             # compiles the Electron main
 
-# 2) install + build the desktop shell
-cd desktop && npm install && npm run build
-
-# 3) provide a Postgres to point at for now (milestone 2 makes this embedded).
-#    e.g. reuse the Docker db:  docker compose up -d db
-export DATABASE_URL="postgresql://apitester:<pw>@localhost:8473/apitester?schema=public"
-
-# 4) launch — the window shows the real app, served from web/dist on the server's origin
+# 2) launch — starts embedded Postgres, migrates it, serves the UI, opens the window
 npm start
 ```
 
-## Packaging (draft, milestone 3)
+First launch initialises a fresh Postgres cluster under the app's `userData` dir
+(Windows: `%APPDATA%\api-tester-desktop\pgdata`), so the app opens with an **empty**
+workspace — separate from any Docker instance. Import a backup JSON to bring data over.
+
+## Packaging (draft, milestone 4)
 
 `electron-builder.yml` assembles `../server/dist` and `../web/dist` into the app as
-`extraResources`. Producing warning-free installers needs an Apple Developer account
-(notarization) and a Windows code-signing certificate — process/cost, not code.
+`extraResources`. Still to wire for a real installer: bundle the server's `prisma/`
+migrations + `node_modules/prisma` (the CLI) and the Prisma **query engine** for each target
+OS (`binaryTargets` in `schema.prisma`), plus the `embedded-postgres` platform binary. Then
+warning-free installers need an Apple Developer account (notarization) and a Windows
+code-signing certificate — process/cost, not code.
 
 ```bash
-npm run dist   # once signing + embedded Postgres are wired
+npm run dist   # once the above bundling + signing are wired
 ```

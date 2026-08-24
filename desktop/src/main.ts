@@ -1,18 +1,15 @@
-// Electron main process for the desktop build of API Tester.
+// Electron main process for the desktop build of API Tester. Fully standalone — no Docker.
 //
-// Lifecycle: pick a free local port -> start the NestJS server (the same server/ code
-// used by the Docker build) as a child process on that port -> wait for /api/health ->
-// open a window pointed at it. On quit, the server child is killed.
+// Lifecycle: start an embedded Postgres under userData -> run `prisma migrate deploy` ->
+// start the NestJS server (the same server/ code the Docker build uses) as a child process,
+// pointed at that DB and serving the web UI (STATIC_DIR) -> wait for /api/health -> open a
+// window. On quit, the server child is killed and Postgres is stopped.
 //
-// The server runs on Electron's bundled Node (ELECTRON_RUN_AS_NODE=1 + process.execPath),
-// so the package does not need a separate Node runtime.
+// The server + prisma CLI run on Electron's bundled Node (ELECTRON_RUN_AS_NODE=1 +
+// process.execPath), so the package does not need a separate Node runtime.
 //
-// SCAFFOLD STATUS (milestone 1): brings up Electron + Nest and proves the lifecycle.
-// It expects a DATABASE_URL in the environment (point it at any Postgres for now).
-//   - Milestone 2 replaces that with an embedded Postgres managed here (see db.ts) and
-//     serves the web UI from Nest (STATIC_DIR) so the window shows the real app.
-//   - Milestone 3 adds electron-builder packaging + code signing/notarization.
-// See README.md in this folder for the full plan.
+// Remaining: milestone 4 — electron-builder packaging (bundle server/, web/, prisma engine +
+// migrations) + code signing/notarization. See README.md.
 
 import { app, BrowserWindow, dialog } from 'electron';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -20,8 +17,10 @@ import { createServer } from 'node:net';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { startEmbeddedPostgres, type EmbeddedDb } from './db';
 
 let serverProc: ChildProcess | null = null;
+let embeddedDb: EmbeddedDb | null = null;
 
 // Ask the OS for an unused TCP port so two instances never clash.
 function freePort(): Promise<number> {
@@ -50,6 +49,32 @@ function webDir(): string {
     return path.join(process.resourcesPath, 'web');
   }
   return path.join(__dirname, '..', '..', 'web', 'dist');
+}
+
+// server/ root (holds prisma/schema.prisma + migrations + the prisma CLI): repo path in dev,
+// resources/server when packaged (milestone 4 bundles node_modules/prisma + prisma/ there).
+function serverDir(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'server');
+  }
+  return path.join(__dirname, '..', '..', 'server');
+}
+
+// Apply pending Prisma migrations to the embedded DB before the server starts (mirrors the
+// Docker entrypoint's `prisma migrate deploy`). Runs the prisma CLI on Electron's Node.
+function runMigrations(databaseUrl: string): Promise<void> {
+  const prismaCli = path.join(serverDir(), 'node_modules', 'prisma', 'build', 'index.js');
+  return new Promise((resolve, reject) => {
+    const proc = spawn(process.execPath, [prismaCli, 'migrate', 'deploy'], {
+      cwd: serverDir(),
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DATABASE_URL: databaseUrl },
+      stdio: 'inherit',
+    });
+    proc.on('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`prisma migrate deploy exited with ${code}`)),
+    );
+    proc.on('error', reject);
+  });
 }
 
 // Poll /api/health until the server answers 200 or we time out.
@@ -101,33 +126,17 @@ function preflight(): { ok: true } | { ok: false; message: string } {
         `Or, from this folder, run: npm run build:deps`,
     };
   }
-  if (!process.env.DATABASE_URL) {
-    // Milestone 1 needs an external, already-migrated Postgres. Milestone 2 embeds it.
-    return {
-      ok: false,
-      message:
-        `DATABASE_URL is not set.\n\n` +
-        `Milestone 1 points at an existing Postgres. The quickest option is the Docker db:\n` +
-        `  docker compose up -d db\n` +
-        `then set (PowerShell):\n` +
-        `  $env:DATABASE_URL = "postgresql://<user>:<pw>@localhost:8473/<db>?schema=public"\n\n` +
-        `Milestone 2 will bundle Postgres so this step goes away.`,
-    };
-  }
   return { ok: true };
 }
 
-async function startServer(port: number): Promise<void> {
+async function startServer(port: number, databaseUrl: string): Promise<void> {
   serverProc = spawn(process.execPath, [serverEntry()], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1', // run the entry as plain Node, not a second Electron
       NODE_ENV: 'production',
       PORT: String(port),
-      // Milestone 1: supply DATABASE_URL yourself, pointed at an already-migrated Postgres.
-      // (The Docker entrypoint runs `prisma migrate deploy` before the server; the desktop
-      //  lifecycle must do the same — milestone 2's db.ts runs it before startServer.)
-      DATABASE_URL: process.env.DATABASE_URL ?? '',
+      DATABASE_URL: databaseUrl, // the embedded Postgres started above
       // Serve the web UI from the server so the window shows the real app on one origin.
       STATIC_DIR: process.env.STATIC_DIR ?? webDir(),
     },
@@ -160,19 +169,21 @@ app.whenReady().then(async () => {
     return;
   }
   try {
+    embeddedDb = await startEmbeddedPostgres(await freePort());
+    await runMigrations(embeddedDb.databaseUrl);
     const port = Number(process.env.SERVER_PORT) || (await freePort());
-    await startServer(port);
+    await startServer(port, embeddedDb.databaseUrl);
     await createWindow(port);
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) void createWindow(port);
     });
   } catch (err) {
     dialog.showErrorBox(
-      'API Tester — server failed to start',
-      `${(err as Error).message}\n\nCheck that DATABASE_URL points at a reachable, ` +
-        `migrated Postgres. See the server output in the terminal for details.`,
+      'API Tester — failed to start',
+      `${(err as Error).message}\n\nSee the terminal output for details.`,
     );
     serverProc?.kill();
+    await embeddedDb?.stop().catch(() => {});
     app.quit();
   }
 });
@@ -181,5 +192,16 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Make sure the server child never outlives the app.
-app.on('quit', () => serverProc?.kill());
+// Graceful shutdown: stop the server child, then the embedded Postgres, before quitting.
+let shuttingDown = false;
+app.on('before-quit', (e) => {
+  if (shuttingDown) return;
+  e.preventDefault();
+  shuttingDown = true;
+  serverProc?.kill();
+  void embeddedDb
+    ?.stop()
+    .catch((err) => console.error('[postgres] stop failed', err))
+    .finally(() => app.quit());
+  if (!embeddedDb) app.quit();
+});
