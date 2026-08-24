@@ -70,7 +70,8 @@ Then `main.ts` sets `STATIC_DIR` to the bundled `web` resources and the window l
 | 1 | Electron boots Nest as a child process, health-gated window | **done** |
 | 2 | Nest serves the web UI (`STATIC_DIR`) so the window shows the real app | **done** |
 | 3 | Embedded Postgres (`src/db.ts`) + auto `migrate deploy` — no external DB, no `DATABASE_URL` | **done** |
-| 4 | `electron-builder` installers + code signing / notarization + auto-update | draft config |
+| 4 | `electron-builder` **unsigned** installer (bundles server + prisma + embedded PG) | **in progress** |
+| 5 | Code signing / notarization + cross-OS Prisma engines + auto-update | planned |
 
 ## Run (dev)
 
@@ -90,15 +91,29 @@ First launch initialises a fresh Postgres cluster under the app's `userData` dir
 (Windows: `%APPDATA%\api-tester-desktop\pgdata`), so the app opens with an **empty**
 workspace — separate from any Docker instance. Import a backup JSON to bring data over.
 
-## Packaging (draft, milestone 4)
+## Packaging — unsigned installer (milestone 4)
 
-`electron-builder.yml` assembles `../server/dist` and `../web/dist` into the app as
-`extraResources`. Still to wire for a real installer: bundle the server's `prisma/`
-migrations + `node_modules/prisma` (the CLI) and the Prisma **query engine** for each target
-OS (`binaryTargets` in `schema.prisma`), plus the `embedded-postgres` platform binary. Then
-warning-free installers need an Apple Developer account (notarization) and a Windows
-code-signing certificate — process/cost, not code.
+`electron-builder.yml` bundles everything the app spawns as real files:
+
+- **`extraResources`** → `resources/server` (the built server + its `node_modules`, so the
+  Prisma client + Windows query engine and the `prisma` CLI are present), `resources/server/prisma`
+  (schema + migrations), and `resources/web` (the UI). `main.ts` resolves these under
+  `process.resourcesPath` when packaged.
+- **`asarUnpack`** for `embedded-postgres` / `@embedded-postgres/*` — it launches real
+  `postgres`/`initdb` executables, which cannot run from inside `app.asar`.
+
+Build the Windows artifacts (from `desktop/`):
 
 ```bash
-npm run dist   # once the above bundling + signing are wired
+npm run build:deps     # ../server + ../web must be built first
+npm run dist           # -> release/  (nsis installer + portable .exe)
 ```
+
+The result is **unsigned**: it runs locally, and a copy downloaded from the internet shows a
+dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would need a right-click
+→ Open (or `xattr -dr com.apple.quarantine`). See milestone 5 for warning-free distribution.
+
+> Not yet wired: the build currently ships the whole `server/node_modules` (includes devDeps —
+> larger installer; a production-only prune is a later optimization), the Prisma engine is
+> **Windows-only** (cross-OS needs `binaryTargets` in `schema.prisma`), and no app icon is set.
+> Packaged runs need verification on a clean machine — expect a path tweak or two.

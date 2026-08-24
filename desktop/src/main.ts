@@ -35,12 +35,18 @@ function freePort(): Promise<number> {
   });
 }
 
-// Compiled Nest entry: server/dist/main.js in dev, resources/server/main.js when packaged.
-function serverEntry(): string {
+// server/ root (dist/ + node_modules/ + prisma/): the repo folder in dev, resources/server when
+// packaged (electron-builder copies those into resources/server via extraResources).
+function serverDir(): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'server', 'main.js');
+    return path.join(process.resourcesPath, 'server');
   }
-  return path.join(__dirname, '..', '..', 'server', 'dist', 'main.js');
+  return path.join(__dirname, '..', '..', 'server');
+}
+
+// Compiled Nest entry — same relative layout in dev and packaged: <serverDir>/dist/main.js.
+function serverEntry(): string {
+  return path.join(serverDir(), 'dist', 'main.js');
 }
 
 // The web build the server serves as the UI (STATIC_DIR): web/dist in dev, resources/web packaged.
@@ -49,15 +55,6 @@ function webDir(): string {
     return path.join(process.resourcesPath, 'web');
   }
   return path.join(__dirname, '..', '..', 'web', 'dist');
-}
-
-// server/ root (holds prisma/schema.prisma + migrations + the prisma CLI): repo path in dev,
-// resources/server when packaged (milestone 4 bundles node_modules/prisma + prisma/ there).
-function serverDir(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'server');
-  }
-  return path.join(__dirname, '..', '..', 'server');
 }
 
 // Apply pending Prisma migrations to the embedded DB before the server starts (mirrors the
