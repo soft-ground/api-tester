@@ -25,6 +25,29 @@ export interface EmbeddedDb {
   stop: () => Promise<void>;
 }
 
+// Is a process with this pid currently running? (signal 0 = existence check)
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM'; // exists but not ours
+  }
+}
+
+// After an ungraceful exit (crash / force-kill), Postgres can leave a postmaster.pid behind.
+// If the pid in it is dead, remove the stale lock so the cluster can start again. (A live
+// instance is prevented by the single-instance lock in main.ts, so a dead pid here is safe
+// to clear.)
+function clearStaleLock(dataDir: string): void {
+  const pidFile = path.join(dataDir, 'postmaster.pid');
+  if (!fs.existsSync(pidFile)) return;
+  const pid = Number(fs.readFileSync(pidFile, 'utf8').split('\n')[0]?.trim());
+  if (!pid || !isAlive(pid)) {
+    fs.rmSync(pidFile, { force: true });
+  }
+}
+
 // Start (initialising on first run) an embedded Postgres cluster under the app's userData dir
 // and ensure the app database exists. This is what makes the desktop build fully standalone:
 // no external Postgres and no DATABASE_URL to set by hand.
@@ -47,6 +70,7 @@ export async function startEmbeddedPostgres(port: number): Promise<EmbeddedDb> {
   if (!fs.existsSync(path.join(dataDir, 'PG_VERSION'))) {
     await pg.initialise();
   }
+  clearStaleLock(dataDir); // self-heal after a previous ungraceful exit
   await pg.start();
 
   // Ensure the app database exists (created once; ignore "already exists").

@@ -158,7 +158,23 @@ async function createWindow(port: number): Promise<void> {
   await win.loadURL(devUrl ?? `http://127.0.0.1:${port}`);
 }
 
+// Only one instance may run — a second launch would fight over the embedded Postgres data
+// dir. If we don't get the lock, focus the existing window and quit this instance.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
+
 app.whenReady().then(async () => {
+  if (!gotSingleInstanceLock) return; // another instance owns the DB; this one is quitting
   const check = preflight();
   if (!check.ok) {
     dialog.showErrorBox('API Tester — cannot start', check.message);
