@@ -63,6 +63,11 @@ export async function startEmbeddedPostgres(port: number): Promise<EmbeddedDb> {
     port,
     authMethod: 'scram-sha-256',
     persistent: true, // keep data between launches
+    // PostgreSQL 18 defaults to async I/O worker subprocesses; under Electron's process
+    // management (job object) those workers crash ("io worker terminated by exception
+    // 0xFFFFFFFF"), taking the server down mid-startup. Force synchronous I/O so no worker
+    // subprocesses are spawned — stable, at a negligible cost for a local single-user DB.
+    postgresFlags: ['-c', 'io_method=sync'],
     onError: (e: unknown) => console.error('[postgres]', e),
   });
 
