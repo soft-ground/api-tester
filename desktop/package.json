@@ -1,0 +1,18 @@
+{
+  "name": "api-tester-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop (Windows/macOS) shell for API Tester — runs the Nest server + UI locally, no Docker.",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "electron .",
+    "dev": "npm run build && electron .",
+    "dist": "npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.5"
+  }
+}

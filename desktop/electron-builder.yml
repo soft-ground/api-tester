@@ -1,0 +1,27 @@
+# electron-builder packaging config (DRAFT — milestone 3).
+# Produces installers from the compiled main process plus the server and web builds.
+# Not wired for signing/notarization yet; see README.md.
+appId: com.softground.apitester
+productName: API Tester
+directories:
+  output: release
+files:
+  - dist/**/*          # compiled Electron main + preload
+  - package.json
+extraResources:
+  # The same server/ and web/ builds the Docker image uses, assembled into the app.
+  # Build them first: (cd ../server && npm run build) and (cd ../web && npm run build).
+  - from: ../server/dist
+    to: server
+  - from: ../web/dist
+    to: web
+  # Milestone 2: also bundle a platform Postgres binary here, e.g.
+  # - from: ./resources/postgres/${os}
+  #   to: postgres
+win:
+  target: nsis
+mac:
+  target: dmg
+  category: public.app-category.developer-tools
+linux:
+  target: AppImage
