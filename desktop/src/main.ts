@@ -14,9 +14,10 @@
 //   - Milestone 3 adds electron-builder packaging + code signing/notarization.
 // See README.md in this folder for the full plan.
 
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
@@ -70,6 +71,34 @@ function waitForHealth(port: number, timeoutMs = 30_000): Promise<void> {
   });
 }
 
+// Fail early with an actionable message instead of a cryptic child-process crash.
+function preflight(): { ok: true } | { ok: false; message: string } {
+  const entry = serverEntry();
+  if (!fs.existsSync(entry)) {
+    return {
+      ok: false,
+      message:
+        `The server build was not found at:\n${entry}\n\n` +
+        `Build it first (from the repo root):\n  cd server && npm install && npm run build\n\n` +
+        `Or, from this folder, run: npm run build:deps`,
+    };
+  }
+  if (!process.env.DATABASE_URL) {
+    // Milestone 1 needs an external, already-migrated Postgres. Milestone 2 embeds it.
+    return {
+      ok: false,
+      message:
+        `DATABASE_URL is not set.\n\n` +
+        `Milestone 1 points at an existing Postgres. The quickest option is the Docker db:\n` +
+        `  docker compose up -d db\n` +
+        `then set (PowerShell):\n` +
+        `  $env:DATABASE_URL = "postgresql://<user>:<pw>@localhost:8473/<db>?schema=public"\n\n` +
+        `Milestone 2 will bundle Postgres so this step goes away.`,
+    };
+  }
+  return { ok: true };
+}
+
 async function startServer(port: number): Promise<void> {
   serverProc = spawn(process.execPath, [serverEntry()], {
     env: {
@@ -106,12 +135,28 @@ async function createWindow(port: number): Promise<void> {
 }
 
 app.whenReady().then(async () => {
-  const port = Number(process.env.SERVER_PORT) || (await freePort());
-  await startServer(port);
-  await createWindow(port);
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) void createWindow(port);
-  });
+  const check = preflight();
+  if (!check.ok) {
+    dialog.showErrorBox('API Tester — cannot start', check.message);
+    app.quit();
+    return;
+  }
+  try {
+    const port = Number(process.env.SERVER_PORT) || (await freePort());
+    await startServer(port);
+    await createWindow(port);
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) void createWindow(port);
+    });
+  } catch (err) {
+    dialog.showErrorBox(
+      'API Tester — server failed to start',
+      `${(err as Error).message}\n\nCheck that DATABASE_URL points at a reachable, ` +
+        `migrated Postgres. See the server output in the terminal for details.`,
+    );
+    serverProc?.kill();
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {

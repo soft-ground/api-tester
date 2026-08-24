@@ -6,6 +6,9 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:server": "npm --prefix ../server run build",
+    "build:web": "npm --prefix ../web run build",
+    "build:deps": "npm run build:server && npm run build:web",
     "start": "electron .",
     "dev": "npm run build && electron .",
     "dist": "npm run build && electron-builder"
