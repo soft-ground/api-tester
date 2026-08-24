@@ -44,6 +44,14 @@ function serverEntry(): string {
   return path.join(__dirname, '..', '..', 'server', 'dist', 'main.js');
 }
 
+// The web build the server serves as the UI (STATIC_DIR): web/dist in dev, resources/web packaged.
+function webDir(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'web');
+  }
+  return path.join(__dirname, '..', '..', 'web', 'dist');
+}
+
 // Poll /api/health until the server answers 200 or we time out.
 function waitForHealth(port: number, timeoutMs = 30_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -83,6 +91,16 @@ function preflight(): { ok: true } | { ok: false; message: string } {
         `Or, from this folder, run: npm run build:deps`,
     };
   }
+  const indexHtml = path.join(webDir(), 'index.html');
+  if (!fs.existsSync(indexHtml)) {
+    return {
+      ok: false,
+      message:
+        `The web build was not found at:\n${indexHtml}\n\n` +
+        `Build it first (from the repo root):\n  cd web && npm install && npm run build\n\n` +
+        `Or, from this folder, run: npm run build:deps`,
+    };
+  }
   if (!process.env.DATABASE_URL) {
     // Milestone 1 needs an external, already-migrated Postgres. Milestone 2 embeds it.
     return {
@@ -110,8 +128,8 @@ async function startServer(port: number): Promise<void> {
       // (The Docker entrypoint runs `prisma migrate deploy` before the server; the desktop
       //  lifecycle must do the same — milestone 2's db.ts runs it before startServer.)
       DATABASE_URL: process.env.DATABASE_URL ?? '',
-      // Milestone 2: set STATIC_DIR to web/dist so Nest serves the UI on the same origin.
-      // STATIC_DIR: process.env.STATIC_DIR ?? '',
+      // Serve the web UI from the server so the window shows the real app on one origin.
+      STATIC_DIR: process.env.STATIC_DIR ?? webDir(),
     },
     stdio: 'inherit',
   });

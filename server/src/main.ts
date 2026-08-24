@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -10,11 +13,26 @@ async function bootstrap() {
   // a "simple request" path that cross-origin pages can send without a preflight, which could
   // trigger /execute (blind SSRF). JSON-only means cross-origin calls always go through a preflight
   // and are blocked (since CORS is not opened).
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   app.use(json({ limit: '25mb' }));
 
   // The frontend (nginx) proxies to /api, so set the global prefix.
   app.setGlobalPrefix('api');
+
+  // Single-origin mode (desktop build): when STATIC_DIR points at the web build, serve it
+  // here so one port serves both the UI and /api. The Docker build leaves STATIC_DIR unset —
+  // nginx serves the UI there — so this block is inert in that path. All controller routes are
+  // under /api, so the SPA fallback (which only handles non-/api GETs) never shadows the API.
+  const staticDir = process.env.STATIC_DIR;
+  if (staticDir) {
+    app.useStaticAssets(staticDir);
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+      res.sendFile(join(staticDir, 'index.html'));
+    });
+  }
 
   // CORS is intentionally not opened. The web app talks only through the nginx same-origin (/api)
   // proxy, so CORS is not needed; reflecting the origin (origin:true) would let any website the user

@@ -65,9 +65,10 @@ Then `main.ts` sets `STATIC_DIR` to the bundled `web` resources and the window l
 
 | # | Goal | State |
 |---|------|-------|
-| 1 | Electron boots Nest as a child process, health-gated window | **scaffolded here** |
-| 2 | Embedded Postgres (`src/db.ts`) + Nest serves the UI (`STATIC_DIR`) | planned |
-| 3 | `electron-builder` installers + code signing / notarization + auto-update | draft config |
+| 1 | Electron boots Nest as a child process, health-gated window | **done** |
+| 2 | Nest serves the web UI (`STATIC_DIR`) so the window shows the real app | **done** |
+| 3 | Embedded Postgres (`src/db.ts`) — drops the manual `DATABASE_URL` step | planned |
+| 4 | `electron-builder` installers + code signing / notarization + auto-update | draft config |
 
 ## Run the milestone-1 scaffold (dev)
 
@@ -83,7 +84,7 @@ cd desktop && npm install && npm run build
 #    e.g. reuse the Docker db:  docker compose up -d db
 export DATABASE_URL="postgresql://apitester:<pw>@localhost:8473/apitester?schema=public"
 
-# 4) launch — for now this shows the served API; wiring the UI is milestone 2
+# 4) launch — the window shows the real app, served from web/dist on the server's origin
 npm start
 ```
 
