@@ -159,11 +159,9 @@ async function createWindow(port: number): Promise<void> {
 }
 
 // Only one instance may run — a second launch would fight over the embedded Postgres data
-// dir. If we don't get the lock, focus the existing window and quit this instance.
+// dir. The primary instance brings its window to the front when another launch is attempted.
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) {
-  app.quit();
-} else {
+if (gotSingleInstanceLock) {
   app.on('second-instance', () => {
     const win = BrowserWindow.getAllWindows()[0];
     if (win) {
@@ -174,7 +172,21 @@ if (!gotSingleInstanceLock) {
 }
 
 app.whenReady().then(async () => {
-  if (!gotSingleInstanceLock) return; // another instance owns the DB; this one is quitting
+  if (!gotSingleInstanceLock) {
+    // Second instance: tell the user instead of silently disappearing, then quit. The primary
+    // instance focuses its window via the 'second-instance' handler above.
+    dialog.showMessageBoxSync({
+      type: 'info',
+      title: 'API Tester',
+      message: 'API Tester is already running.',
+      detail:
+        'Only one instance can run at a time because they share one local database. ' +
+        'The existing window has been brought to the front.',
+      buttons: ['OK'],
+    });
+    app.quit();
+    return;
+  }
   const check = preflight();
   if (!check.ok) {
     dialog.showErrorBox('API Tester — cannot start', check.message);

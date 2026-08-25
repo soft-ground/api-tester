@@ -35,9 +35,11 @@ extraResources:
     to: web
 
 win:
+  # Installer only. The portable target was dropped: it re-extracts the whole ~490 MB app to a
+  # temp dir on every launch (slow), and its self-extractor stub proved flaky for this
+  # spawn-heavy, no-asar app. The NSIS installer installs to a stable folder and is reliable.
   target:
     - nsis
-    - portable
 nsis:
   oneClick: false
   perMachine: false
