@@ -158,6 +158,14 @@ async function createWindow(port: number): Promise<void> {
   await win.loadURL(devUrl ?? `http://127.0.0.1:${port}`);
 }
 
+// Some Windows machines deny Chromium's separate GPU process (exit 0xC0000022 ACCESS_DENIED —
+// typically security software or a graphics-driver issue). Electron then kills the app on
+// launch after repeated GPU crashes ("GPU process isn't usable. Goodbye."), so no window ever
+// appears. Running GPU work in-process with software rendering avoids spawning that denied
+// subprocess entirely; the cost is negligible for this lightweight (forms/tables/JSON) UI.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('in-process-gpu');
+
 // Only one instance may run — a second launch would fight over the embedded Postgres data
 // dir. The primary instance brings its window to the front when another launch is attempted.
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
