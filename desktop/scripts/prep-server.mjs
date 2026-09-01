@@ -22,7 +22,7 @@ console.log('[prep-server] staging a production-only server at', outDir);
 rmSync(stagingDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 
-for (const item of ['dist', 'prisma', 'package.json', 'package-lock.json']) {
+for (const item of ['dist', 'prisma', 'package.json']) {
   const src = join(serverDir, item);
   if (!existsSync(src)) {
     throw new Error(
@@ -32,6 +32,10 @@ for (const item of ['dist', 'prisma', 'package.json', 'package-lock.json']) {
   }
   cpSync(src, join(outDir, item), { recursive: true });
 }
+// package-lock.json is not committed in this repo (CI installs with `npm install`), so copy it
+// only when present to pin versions locally; its absence in CI is fine.
+const lock = join(serverDir, 'package-lock.json');
+if (existsSync(lock)) cpSync(lock, join(outDir, 'package-lock.json'));
 
 const run = (cmd) => {
   console.log('[prep-server] $', cmd);
@@ -39,8 +43,9 @@ const run = (cmd) => {
 };
 
 // Install runtime deps only (no devDependencies), then (re)generate the Prisma client so the
-// packaged tree has the query engine and client without relying on the dev install.
-run('npm ci --omit=dev --no-audit --no-fund');
+// packaged tree has the query engine and client without relying on the dev install. Uses
+// `npm install` (not `npm ci`) to match the repo convention of not committing lockfiles.
+run('npm install --omit=dev --no-audit --no-fund');
 run('npx prisma generate');
 
 console.log('[prep-server] done — packaged server will exclude devDependencies');

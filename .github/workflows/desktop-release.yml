@@ -1,0 +1,66 @@
+# Build the Windows desktop installer and attach it to a GitHub Release.
+#
+# Trigger by pushing a tag like `desktop-v0.1.0` (kept separate from the web/server `v*` tags
+# that drive the Docker images, since the desktop app has its own version). `workflow_dispatch`
+# builds the installer without publishing, so the artifact can be downloaded for testing.
+#
+# The installer is UNSIGNED (no code-signing certificate configured) — downloaded copies show a
+# dismissible SmartScreen prompt. See milestone 5 for warning-free distribution.
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # create the release and upload the installer asset
+
+jobs:
+  windows-installer:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install & build server
+        working-directory: server
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install & build web
+        working-directory: web
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Package installer (prunes the server, builds the NSIS installer)
+        working-directory: desktop
+        run: npm run dist
+        env:
+          # Unsigned build: don't let electron-builder hunt for a signing identity.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload installer as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-tester-desktop-windows
+          path: desktop/release/*.exe
+          if-no-files-found: error
+
+      - name: Attach installer to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: desktop/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
