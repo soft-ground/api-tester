@@ -19,17 +19,19 @@ files:
   - dist/**/*        # compiled Electron main + preload
   - package.json
 
-# Real files on disk (outside the asar) that the spawned child processes need:
-# the built server + its node_modules (Nest, Prisma client + query engine), the prisma CLI
-# and migrations, and the web build the server serves as the UI.
+# Real files on disk (outside the asar) that the spawned child processes need: the built server
+# + its node_modules (Nest, Prisma client + query engine), the prisma CLI and migrations, and
+# the web build the server serves as the UI. The server bits come from `staging/server`, a
+# production-only tree assembled by `scripts/prep-server.mjs` (npm ci --omit=dev) so the installer
+# excludes build/test-only devDependencies — run `npm run prep:server` before packaging.
 extraResources:
-  - from: ../server/dist
+  - from: staging/server/dist
     to: server/dist
-  - from: ../server/node_modules
+  - from: staging/server/node_modules
     to: server/node_modules
-  - from: ../server/prisma
+  - from: staging/server/prisma
     to: server/prisma
-  - from: ../server/package.json
+  - from: staging/server/package.json
     to: server/package.json
   - from: ../web/dist
     to: web

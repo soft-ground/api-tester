@@ -95,25 +95,28 @@ workspace — separate from any Docker instance. Import a backup JSON to bring d
 
 `electron-builder.yml` bundles everything the app spawns as real files:
 
-- **`extraResources`** → `resources/server` (the built server + its `node_modules`, so the
-  Prisma client + Windows query engine and the `prisma` CLI are present), `resources/server/prisma`
-  (schema + migrations), and `resources/web` (the UI). `main.ts` resolves these under
-  `process.resourcesPath` when packaged.
-- **`asarUnpack`** for `embedded-postgres` / `@embedded-postgres/*` — it launches real
-  `postgres`/`initdb` executables, which cannot run from inside `app.asar`.
+- **`extraResources`** → `resources/server` (the built server + a **production-only**
+  `node_modules` assembled by `scripts/prep-server.mjs` — the Prisma client + Windows query engine
+  and the `prisma` CLI are present, but build/test-only devDependencies are excluded, roughly
+  halving that tree), `resources/server/prisma` (schema + migrations), and `resources/web` (the
+  UI). `main.ts` resolves these under `process.resourcesPath` when packaged.
+- **`asar: false`** — `embedded-postgres` resolves its `postgres`/`initdb` binaries via
+  `import.meta.url`, which points inside `app.asar` even when unpacked, so the whole app is kept
+  as real files on disk.
 
 Build the Windows artifacts (from `desktop/`):
 
 ```bash
-npm run build:deps     # ../server + ../web must be built first
-npm run dist           # -> release/  (nsis installer + portable .exe)
+npm run build:deps     # build ../server + ../web first
+npm run dist           # stages a pruned server, then builds -> release/ (nsis installer)
 ```
+
+`npm run dist` runs `prep:server` automatically (stages `staging/server` via `npm ci --omit=dev`),
+so the server must be built (`build:deps`) beforehand.
 
 The result is **unsigned**: it runs locally, and a copy downloaded from the internet shows a
 dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would need a right-click
 → Open (or `xattr -dr com.apple.quarantine`). See milestone 5 for warning-free distribution.
 
-> Not yet wired: the build currently ships the whole `server/node_modules` (includes devDeps —
-> larger installer; a production-only prune is a later optimization), the Prisma engine is
-> **Windows-only** (cross-OS needs `binaryTargets` in `schema.prisma`), and no app icon is set.
-> Packaged runs need verification on a clean machine — expect a path tweak or two.
+> Not yet wired: the Prisma engine is **Windows-only** (cross-OS needs `binaryTargets` in
+> `schema.prisma`), and no app icon is set. Packaged runs need verification on a clean machine.

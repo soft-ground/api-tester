@@ -9,10 +9,11 @@
     "build:server": "npm --prefix ../server run build",
     "build:web": "npm --prefix ../web run build",
     "build:deps": "npm run build:server && npm run build:web",
+    "prep:server": "node scripts/prep-server.mjs",
     "start": "electron .",
     "dev": "npm run build && electron .",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "pack": "npm run build && npm run prep:server && electron-builder --dir",
+    "dist": "npm run build && npm run prep:server && electron-builder"
   },
   "devDependencies": {
     "electron": "^31.3.0",
