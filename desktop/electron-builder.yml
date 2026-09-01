@@ -36,7 +36,10 @@ extraResources:
   - from: ../web/dist
     to: web
 
+# App icon (generated from web/public/favicon.svg — see assets/). buildResources default (build/)
+# is gitignored here, so the icons live in assets/ and are referenced explicitly per platform.
 win:
+  icon: assets/icon.ico
   # Installer only. The portable target was dropped: it re-extracts the whole ~490 MB app to a
   # temp dir on every launch (slow), and its self-extractor stub proved flaky for this
   # spawn-heavy, no-asar app. The NSIS installer installs to a stable folder and is reliable.
@@ -49,7 +52,9 @@ nsis:
 
 # Present for later; building these needs a macOS host and (for warning-free) signing.
 mac:
+  icon: assets/icon.png
   target: dmg
   category: public.app-category.developer-tools
 linux:
+  icon: assets/icon.png
   target: AppImage
