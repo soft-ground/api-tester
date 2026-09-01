@@ -119,4 +119,4 @@ dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would nee
 → Open (or `xattr -dr com.apple.quarantine`). See milestone 5 for warning-free distribution.
 
 > Not yet wired: the Prisma engine is **Windows-only** (cross-OS needs `binaryTargets` in
-> `schema.prisma`), and no app icon is set. Packaged runs need verification on a clean machine.
+> `schema.prisma`). Packaged runs need verification on a clean machine.
