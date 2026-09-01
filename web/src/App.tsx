@@ -221,8 +221,10 @@ export default function App() {
         </nav>
         <div className="sidebar-footer">
           {!collapsed && <LangSelect />}
-          {themeToggle}
-          <HealthBadge />
+          <div className="sidebar-footer-row">
+            {themeToggle}
+            <HealthBadge />
+          </div>
           {!collapsed && (
             <button
               className="switch-layout"

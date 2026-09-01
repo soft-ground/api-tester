@@ -202,6 +202,18 @@ body {
   flex-direction: column;
   gap: 8px;
 }
+/* Group the small controls (theme toggle + health badge) on one aligned row so the
+   toggle no longer floats alone; the lang select and layout switch stay full-width. */
+.sidebar-footer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.collapsed .sidebar-footer-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
 .lang-select {
   width: 100%;
   font-size: 12px;
