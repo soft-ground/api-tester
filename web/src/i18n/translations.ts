@@ -16,6 +16,20 @@ const ko: Dict = {
   'nav.history': '호출 이력',
   'nav.scenarios': '시나리오',
   'nav.environments': '환경 변수',
+  'nav.jsonTools': 'JSON 변환',
+
+  // json → csv/excel tool
+  'tools.title': 'JSON → CSV/Excel',
+  'tools.desc': 'JSON 데이터를 붙여넣으면 표로 변환해 CSV 또는 Excel로 저장합니다.',
+  'tools.inputLabel': 'JSON 붙여넣기',
+  'tools.placeholder': '여기에 JSON을 붙여넣으세요.\n예: [{"id":1,"name":"a"},{"id":2,"name":"b"}]',
+  'tools.parseError': 'JSON 파싱 오류: {msg}',
+  'tools.empty': '왼쪽에 JSON을 붙여넣으면 여기에 표 미리보기가 나타납니다.',
+  'tools.csvTargetHint': 'CSV는 단일 표만 담깁니다. 아래 탭에서 선택한 표가 CSV로 저장됩니다. (Excel은 전체 시트를 저장)',
+  'tools.rows': '{n}행',
+  'tools.moreRows': '외 {n}행 (미리보기 일부만 표시)',
+  'tools.sample': '예시 넣기',
+  'tools.clear': '지우기',
 
   // health
   'health.checking': '확인 중…',
@@ -383,6 +397,20 @@ const en: Dict = {
   'nav.history': 'History',
   'nav.scenarios': 'Scenarios',
   'nav.environments': 'Environments',
+  'nav.jsonTools': 'JSON Tools',
+
+  // json → csv/excel tool
+  'tools.title': 'JSON → CSV/Excel',
+  'tools.desc': 'Paste JSON data to convert it into a table and save as CSV or Excel.',
+  'tools.inputLabel': 'Paste JSON',
+  'tools.placeholder': 'Paste JSON here.\ne.g. [{"id":1,"name":"a"},{"id":2,"name":"b"}]',
+  'tools.parseError': 'JSON parse error: {msg}',
+  'tools.empty': 'Paste JSON on the left to see a table preview here.',
+  'tools.csvTargetHint': 'CSV holds a single table. The tab selected below is exported as CSV. (Excel saves all sheets.)',
+  'tools.rows': '{n} rows',
+  'tools.moreRows': '{n} more rows (preview truncated)',
+  'tools.sample': 'Insert sample',
+  'tools.clear': 'Clear',
 
   'health.checking': 'Checking…',
   'health.ok': 'Server OK',

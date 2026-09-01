@@ -13,6 +13,7 @@ import CollectionsPage from './pages/CollectionsPage';
 import HistoryPage from './pages/HistoryPage';
 import ScenariosPage from './pages/ScenariosPage';
 import EnvironmentsPage from './pages/EnvironmentsPage';
+import JsonToolPage from './pages/JsonToolPage';
 import { useI18n } from './i18n';
 import { LANGS } from './i18n/translations';
 
@@ -21,6 +22,7 @@ const NAV = [
   { to: '/history', key: 'nav.history', icon: '🕘' },
   { to: '/scenarios', key: 'nav.scenarios', icon: '🧪' },
   { to: '/environments', key: 'nav.environments', icon: '🔧' },
+  { to: '/json-tools', key: 'nav.jsonTools', icon: '📊' },
 ];
 
 type Layout = 'sidebar' | 'header';
@@ -155,6 +157,7 @@ export default function App() {
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/scenarios" element={<ScenariosPage />} />
       <Route path="/environments" element={<EnvironmentsPage />} />
+      <Route path="/json-tools" element={<JsonToolPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
