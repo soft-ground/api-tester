@@ -70,8 +70,9 @@ Then `main.ts` sets `STATIC_DIR` to the bundled `web` resources and the window l
 | 1 | Electron boots Nest as a child process, health-gated window | **done** |
 | 2 | Nest serves the web UI (`STATIC_DIR`) so the window shows the real app | **done** |
 | 3 | Embedded Postgres (`src/db.ts`) + auto `migrate deploy` — no external DB, no `DATABASE_URL` | **done** |
-| 4 | `electron-builder` **unsigned** installer (bundles server + prisma + embedded PG) | **in progress** |
-| 5 | Code signing / notarization + cross-OS Prisma engines + auto-update | planned |
+| 4 | `electron-builder` **unsigned** installer (bundles server + prisma + embedded PG) | **done** |
+| 5 | Auto-update (`electron-updater`) + cross-OS installers (Win/Linux/macOS, native CI runners) | **done** |
+| 6 | Code signing / notarization for warning-free downloads | planned |
 
 ## Run (dev)
 
@@ -116,7 +117,16 @@ so the server must be built (`build:deps`) beforehand.
 
 The result is **unsigned**: it runs locally, and a copy downloaded from the internet shows a
 dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would need a right-click
-→ Open (or `xattr -dr com.apple.quarantine`). See milestone 5 for warning-free distribution.
+→ Open (or `xattr -dr com.apple.quarantine`). See milestone 6 for warning-free distribution.
 
-> Not yet wired: the Prisma engine is **Windows-only** (cross-OS needs `binaryTargets` in
-> `schema.prisma`). Packaged runs need verification on a clean machine.
+## Cross-platform builds
+
+The release workflow builds each OS on its own **native** runner
+(`.github/workflows/desktop-release.yml`, matrix over `windows-latest` / `ubuntu-latest` /
+`macos-latest`): NSIS `.exe`, `.AppImage`, and `.dmg` respectively. This works without
+cross-compiling because the three host-specific pieces resolve per platform — the Prisma query
+engine defaults to `native`, `embedded-postgres` ships a per-OS binary as an optional dependency,
+and `electron-builder` builds the host target. (For broader Linux reach across different
+`glibc`/OpenSSL variants, add explicit `binaryTargets` to `schema.prisma`.) macOS is built for
+Apple Silicon (the runner's arch); the app is unsigned/ad-hoc-signed, so first launch needs a
+right-click → Open.

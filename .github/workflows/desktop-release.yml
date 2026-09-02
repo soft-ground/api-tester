@@ -1,11 +1,14 @@
-# Build the Windows desktop installer and attach it to a GitHub Release.
+# Build the desktop installers for Windows, Linux, and macOS, and attach them to a GitHub Release.
 #
-# Trigger by pushing a tag like `desktop-v0.1.0` (kept separate from the web/server `v*` tags
-# that drive the Docker images, since the desktop app has its own version). `workflow_dispatch`
-# builds the installer without publishing, so the artifact can be downloaded for testing.
+# Trigger by pushing a tag like `desktop-v0.1.0` (kept separate from the web/server `v*` tags that
+# drive the Docker images, since the desktop app has its own version). `workflow_dispatch` builds
+# the installers without publishing, so the artifacts can be downloaded for testing.
 #
-# The installer is UNSIGNED (no code-signing certificate configured) — downloaded copies show a
-# dismissible SmartScreen prompt. See milestone 5 for warning-free distribution.
+# Each OS is built on its own native runner (electron-builder + the Prisma engine + the embedded
+# Postgres binary are all host-specific): windows-latest -> NSIS .exe, ubuntu-latest -> .AppImage,
+# macos-latest -> .dmg (Apple Silicon). Builds are UNSIGNED (no certificate configured) — Windows
+# shows a dismissible SmartScreen prompt, macOS needs a right-click -> Open (Gatekeeper). See
+# milestone 5 for warning-free distribution (code signing + notarization).
 name: Desktop release
 
 on:
@@ -15,12 +18,16 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write # create the release and upload the installer asset
+  contents: write # create the release and upload the installer assets
 
 jobs:
-  windows-installer:
-    name: Windows installer
-    runs-on: windows-latest
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,32 +50,44 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
-      - name: Package installer (prunes the server, builds the NSIS installer)
+      - name: Package the host-OS installer (prunes the server first)
         working-directory: desktop
         run: npm run dist
         env:
-          # Unsigned build: don't let electron-builder hunt for a signing identity.
+          # Unsigned builds: don't let electron-builder hunt for a signing identity (Windows
+          # Authenticode / macOS codesign). macOS still receives an ad-hoc signature so it runs.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
-      - name: Upload installer as a workflow artifact
+      # Installers + electron-updater metadata (latest*.yml) + *.blockmap (differential updates).
+      # Each runner only produces its own OS's files, so the cross-OS globs simply match nothing there.
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: api-tester-desktop-windows
+          name: desktop-${{ matrix.os }}
           path: |
             desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/*.dmg
+            desktop/release/*.zip
             desktop/release/*.blockmap
-            desktop/release/latest.yml
+            desktop/release/latest*.yml
           if-no-files-found: error
 
-      # The installer plus latest.yml (update metadata) and *.blockmap (differential downloads)
-      # are what electron-updater reads from the release to detect and fetch new versions.
-      - name: Attach installer + update metadata to the GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+  # Gather every OS's artifacts and attach them to the release in a single step, so the three
+  # build jobs don't race to create/update the release concurrently.
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+      - name: Attach installers + update metadata to the GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            desktop/release/*.exe
-            desktop/release/*.blockmap
-            desktop/release/latest.yml
+          files: dist-artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
