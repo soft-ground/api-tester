@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { jsonToSheets, SheetSpec } from '../lib/jsonToSheets';
 import { excelFilename, exportJsonToXlsx } from '../lib/exportExcel';
 import { aoaToCsv, csvFilename, downloadCsv } from '../lib/exportCsv';
@@ -77,6 +77,34 @@ export default function JsonToolPage() {
   const [text, setText] = useState('');
   const [activeSheet, setActiveSheet] = useState(0);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [leftWidth, setLeftWidth] = useState<number>(() => {
+    const s = Number(localStorage.getItem('jtLeftWidth'));
+    return s >= 260 && s <= 1000 ? s : 420;
+  });
+  useEffect(() => localStorage.setItem('jtLeftWidth', String(leftWidth)), [leftWidth]);
+
+  // Drag the divider to resize the paste/preview split. Width is measured from the grid's left edge.
+  const startSplitResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const grid = gridRef.current;
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    const max = Math.max(260, rect.width - 300);
+    const onMove = (ev: MouseEvent) =>
+      setLeftWidth(Math.min(Math.max(260, ev.clientX - rect.left), max));
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
   // Parse the pasted text once per change; expose ok/data/error for the UI.
   const parsed = useMemo<{ ok: boolean | null; data: unknown; error: string }>(() => {
     const s = text.trim();
@@ -117,7 +145,11 @@ export default function JsonToolPage() {
       </div>
       <p className="page-desc">{t('tools.desc')}</p>
 
-      <div className="jt-grid">
+      <div
+        className="jt-grid"
+        ref={gridRef}
+        style={{ ['--jt-left']: `${leftWidth}px` } as React.CSSProperties}
+      >
         <div className="jt-input">
           <div className="jt-input-head">
             <label>{t('tools.inputLabel')}</label>
@@ -146,6 +178,14 @@ export default function JsonToolPage() {
             </div>
           )}
         </div>
+
+        <div
+          className="jt-resize"
+          onMouseDown={startSplitResize}
+          title={t('tools.resizeSplit')}
+          role="separator"
+          aria-orientation="vertical"
+        />
 
         <div className="jt-preview">
           <div className="jt-preview-head">

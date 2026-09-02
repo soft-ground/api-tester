@@ -91,6 +91,56 @@ body {
   flex-direction: column;
   padding: 12px 10px;
   min-width: 0;
+  position: relative; /* anchor for the drag-to-resize handle */
+}
+
+/* Draggable right edge of the expanded sidebar (hidden when collapsed). */
+.sidebar-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+}
+.sidebar-resize:hover {
+  background: var(--accent);
+  opacity: 0.35;
+}
+
+/* Separate standalone tools from the API-testing nav sections.
+   Sidebar (vertical): a horizontal divider with a small section label above the tool items. */
+.nav-sep {
+  margin: 12px 8px 4px;
+  border-top: 1px solid var(--border);
+}
+.nav-sep-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 6px 0;
+}
+.collapsed .nav-sep {
+  margin: 10px 8px;
+}
+/* Header (horizontal topnav): a vertical divider instead; the section label is dropped. */
+.topnav .nav-sep {
+  margin: 0 4px;
+  border-top: none;
+  border-left: 1px solid var(--border);
+  align-self: center;
+  height: 20px;
+}
+.topnav .nav-sep-label {
+  display: none;
+}
+/* Tool items read as secondary (slightly muted) until active. */
+.nav-tool:not(.active) {
+  opacity: 0.9;
 }
 
 .sidebar-top {
@@ -2693,10 +2743,21 @@ textarea:focus {
 /* JSON -> CSV/Excel tool page */
 .json-tool .jt-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr);
-  gap: 20px;
+  /* input | drag handle | preview; the input width is user-resizable via the handle. */
+  grid-template-columns: var(--jt-left, 420px) 10px minmax(0, 1fr);
+  gap: 8px;
   margin-top: 16px;
   align-items: start;
+}
+.jt-resize {
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: 3px;
+  background: var(--border);
+  transition: background 0.15s;
+}
+.jt-resize:hover {
+  background: var(--accent);
 }
 .jt-input {
   display: flex;
@@ -2799,5 +2860,8 @@ textarea:focus {
 @media (max-width: 900px) {
   .json-tool .jt-grid {
     grid-template-columns: 1fr;
+  }
+  .jt-resize {
+    display: none;
   }
 }

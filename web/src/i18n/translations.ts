@@ -17,6 +17,8 @@ const ko: Dict = {
   'nav.scenarios': '시나리오',
   'nav.environments': '환경 변수',
   'nav.jsonTools': 'JSON 변환',
+  'nav.toolsSection': '도구',
+  'shell.resizeSidebar': '드래그하여 사이드바 너비 조절',
 
   // json → csv/excel tool
   'tools.title': 'JSON → CSV/Excel',
@@ -30,6 +32,7 @@ const ko: Dict = {
   'tools.moreRows': '외 {n}행 (미리보기 일부만 표시)',
   'tools.sample': '예시 넣기',
   'tools.clear': '지우기',
+  'tools.resizeSplit': '드래그하여 너비 조절',
 
   // health
   'health.checking': '확인 중…',
@@ -398,6 +401,8 @@ const en: Dict = {
   'nav.scenarios': 'Scenarios',
   'nav.environments': 'Environments',
   'nav.jsonTools': 'JSON Tools',
+  'nav.toolsSection': 'Tools',
+  'shell.resizeSidebar': 'Drag to resize the sidebar',
 
   // json → csv/excel tool
   'tools.title': 'JSON → CSV/Excel',
@@ -411,6 +416,7 @@ const en: Dict = {
   'tools.moreRows': '{n} more rows (preview truncated)',
   'tools.sample': 'Insert sample',
   'tools.clear': 'Clear',
+  'tools.resizeSplit': 'Drag to resize',
 
   'health.checking': 'Checking…',
   'health.ok': 'Server OK',
