@@ -12,6 +12,7 @@
 // migrations) + code signing/notarization. See README.md.
 
 import { app, BrowserWindow, dialog } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import * as fs from 'node:fs';
@@ -158,6 +159,16 @@ async function createWindow(port: number): Promise<void> {
   await win.loadURL(devUrl ?? `http://127.0.0.1:${port}`);
 }
 
+// Check the GitHub Releases feed for a newer version, download it in the background, and notify
+// the user (the update installs on quit). Only meaningful in packaged builds — electron-updater
+// is a no-op in dev — and deliberately non-fatal: a failed check (offline, no release yet) is
+// logged and ignored so it never affects startup.
+function initAutoUpdater(): void {
+  if (!app.isPackaged) return;
+  autoUpdater.on('error', (err) => console.error('[updater]', err));
+  void autoUpdater.checkForUpdatesAndNotify().catch((err) => console.error('[updater]', err));
+}
+
 // Some Windows machines deny Chromium's separate GPU process (exit 0xC0000022 ACCESS_DENIED —
 // typically security software or a graphics-driver issue). Electron then kills the app on
 // launch after repeated GPU crashes ("GPU process isn't usable. Goodbye."), so no window ever
@@ -207,6 +218,7 @@ app.whenReady().then(async () => {
     const port = Number(process.env.SERVER_PORT) || (await freePort());
     await startServer(port, embeddedDb.databaseUrl);
     await createWindow(port);
+    initAutoUpdater();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) void createWindow(port);
     });

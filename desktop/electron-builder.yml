@@ -5,6 +5,14 @@
 appId: com.softground.apitester
 productName: API Tester
 
+# Update feed for electron-updater: it reads latest.yml + the installer from this repo's GitHub
+# Releases. Declaring it here also makes electron-builder emit latest.yml during the build. The
+# actual upload is done by the CI workflow (softprops/action-gh-release), not electron-builder.
+publish:
+  provider: github
+  owner: soft-ground
+  repo: api-tester
+
 directories:
   output: release
 
@@ -46,6 +54,10 @@ win:
   target:
     - nsis
 nsis:
+  # Space-free artifact name so the file on disk, latest.yml's `url`, and the uploaded release
+  # asset all match. GitHub rewrites spaces in asset filenames (to dots), which would otherwise
+  # break electron-updater (it fetches the exact url latest.yml records).
+  artifactName: API-Tester-Setup-${version}.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true

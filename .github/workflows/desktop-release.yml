@@ -54,13 +54,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: api-tester-desktop-windows
-          path: desktop/release/*.exe
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.blockmap
+            desktop/release/latest.yml
           if-no-files-found: error
 
-      - name: Attach installer to the GitHub Release
+      # The installer plus latest.yml (update metadata) and *.blockmap (differential downloads)
+      # are what electron-updater reads from the release to detect and fetch new versions.
+      - name: Attach installer + update metadata to the GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/release/*.exe
+          files: |
+            desktop/release/*.exe
+            desktop/release/*.blockmap
+            desktop/release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
