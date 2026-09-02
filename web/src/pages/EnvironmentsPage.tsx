@@ -50,19 +50,21 @@ function EnvironmentsSection() {
   // with locale-aware collation so multilingual keys order naturally, no ascending/descending
   // wording needed. Edits still target the original row index; newly-added empty-key rows stay at
   // the bottom so they don't jump to the top.
-  const [varSort, setVarSort] = useState<'default' | 'name'>(() =>
-    localStorage.getItem('envVarSort') === 'name' ? 'name' : 'default',
-  );
+  const [varSort, setVarSort] = useState<'default' | 'asc' | 'desc'>(() => {
+    const s = localStorage.getItem('envVarSort');
+    return s === 'asc' || s === 'desc' ? s : 'default';
+  });
   useEffect(() => localStorage.setItem('envVarSort', varSort), [varSort]);
 
   const displayedRows = useMemo(() => {
     const indexed = rows.map((row, i) => ({ row, i }));
-    if (varSort !== 'name') return indexed;
+    if (varSort === 'default') return indexed;
     return [...indexed].sort((a, b) => {
       const ak = a.row[0];
       const bk = b.row[0];
       if (!ak || !bk) return !ak && !bk ? 0 : ak ? -1 : 1; // empty keys sink to the bottom
-      return ak.localeCompare(bk, undefined, { numeric: true, sensitivity: 'base' });
+      const cmp = ak.localeCompare(bk, undefined, { numeric: true, sensitivity: 'base' });
+      return varSort === 'asc' ? cmp : -cmp;
     });
   }, [rows, varSort]);
 
@@ -217,11 +219,12 @@ function EnvironmentsSection() {
                 <select
                   className="var-sort"
                   value={varSort}
-                  onChange={(e) => setVarSort(e.target.value as 'default' | 'name')}
+                  onChange={(e) => setVarSort(e.target.value as 'default' | 'asc' | 'desc')}
                   title={t('env.sortTitle')}
                 >
                   <option value="default">{t('env.sortDefault')}</option>
-                  <option value="name">{t('env.sortName')}</option>
+                  <option value="asc">{t('env.sortAsc')}</option>
+                  <option value="desc">{t('env.sortDesc')}</option>
                 </select>
               </div>
               <div className="obj-editor">
