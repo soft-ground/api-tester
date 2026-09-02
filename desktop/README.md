@@ -121,12 +121,14 @@ dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would nee
 
 ## Cross-platform builds
 
-The release workflow builds each OS on its own **native** runner
-(`.github/workflows/desktop-release.yml`, matrix over `windows-latest` / `ubuntu-latest` /
-`macos-latest`): NSIS `.exe`, `.AppImage`, and `.dmg` respectively. This works without
-cross-compiling because the three host-specific pieces resolve per platform — the Prisma query
-engine defaults to `native`, `embedded-postgres` ships a per-OS binary as an optional dependency,
-and `electron-builder` builds the host target. (For broader Linux reach across different
-`glibc`/OpenSSL variants, add explicit `binaryTargets` to `schema.prisma`.) macOS is built for
-Apple Silicon (the runner's arch); the app is unsigned/ad-hoc-signed, so first launch needs a
-right-click → Open.
+The release workflow builds each OS/arch on its own **native** runner
+(`.github/workflows/desktop-release.yml`): `windows-latest` → NSIS `.exe`, `ubuntu-latest` →
+`.AppImage`, `macos-13` (Intel) → x64 `.dmg`, `macos-14` (Apple Silicon) → arm64 `.dmg`. This
+works without cross-compiling because the host-specific pieces resolve per runner — the Prisma
+query engine defaults to `native`, and `embedded-postgres` ships a **per-OS-and-arch** Postgres
+binary as an optional dependency (npm installs only the one matching the runner), so a Mac must be
+built on the runner of its own architecture to bundle the right Postgres. (For broader Linux reach
+across different `glibc`/OpenSSL variants, add explicit `binaryTargets` to `schema.prisma`.) All
+outputs are unsigned/ad-hoc-signed, so a downloaded macOS app needs a right-click → Open on first
+launch. `workflow_dispatch` runs the build without publishing, so the per-OS artifacts can be
+downloaded from the Actions run for testing before a real tagged release.

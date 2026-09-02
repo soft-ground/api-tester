@@ -62,10 +62,14 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 
-# Present for later; building these needs a macOS host and (for warning-free) signing.
+# Built per-arch on its native runner: macos-13 (Intel) emits an x64 dmg (with the darwin-x64
+# Postgres binary), macos-14 (Apple Silicon) an arm64 dmg. The ${arch} in the name keeps the two
+# dmgs (and their blockmaps) from colliding as release assets. Unsigned (Gatekeeper prompt on
+# first launch); warning-free needs signing + notarization.
 mac:
   icon: assets/icon.png
   target: dmg
+  artifactName: API-Tester-${version}-${arch}.${ext}
   category: public.app-category.developer-tools
 linux:
   icon: assets/icon.png

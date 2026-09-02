@@ -4,11 +4,16 @@
 # drive the Docker images, since the desktop app has its own version). `workflow_dispatch` builds
 # the installers without publishing, so the artifacts can be downloaded for testing.
 #
-# Each OS is built on its own native runner (electron-builder + the Prisma engine + the embedded
-# Postgres binary are all host-specific): windows-latest -> NSIS .exe, ubuntu-latest -> .AppImage,
-# macos-latest -> .dmg (Apple Silicon). Builds are UNSIGNED (no certificate configured) — Windows
-# shows a dismissible SmartScreen prompt, macOS needs a right-click -> Open (Gatekeeper). See
-# milestone 5 for warning-free distribution (code signing + notarization).
+# Each OS/arch is built on its own native runner, because electron-builder, the Prisma query
+# engine, and the embedded Postgres binary are all host-specific (npm only installs the
+# optionalDependency Postgres binary matching the runner's os+cpu):
+#   windows-latest -> NSIS .exe (x64)
+#   ubuntu-latest  -> .AppImage (x86_64)
+#   macos-13       -> .dmg (Intel / x64)      <- runs on Intel Macs
+#   macos-14       -> .dmg (Apple Silicon / arm64)
+# Builds are UNSIGNED (no certificate configured) — Windows shows a dismissible SmartScreen
+# prompt, macOS needs a right-click -> Open (Gatekeeper). See milestone 6 for warning-free
+# distribution (code signing + notarization).
 name: Desktop release
 
 on:
@@ -26,7 +31,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        # macos-13 = Intel (x64), macos-14 = Apple Silicon (arm64) — build both so the dmg runs
+        # natively on each Mac architecture with the matching embedded-Postgres binary.
+        os: [windows-latest, ubuntu-latest, macos-13, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
