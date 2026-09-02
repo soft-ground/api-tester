@@ -1,6 +1,6 @@
 {
   "name": "api-tester-desktop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Desktop (Windows/macOS) shell for API Tester — runs the Nest server + UI locally, no Docker.",
   "main": "dist/main.js",
