@@ -203,6 +203,19 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
   const patch = (p: Partial<ApiEndpoint>) => setEp({ ...ep, ...p });
   const fullUrl = `${ep.baseUrl || ''}${ep.path || ''}`;
 
+  // On Save/Send, trim leading/trailing whitespace off the URL fields (usually a copy-paste
+  // artifact — e.g. " https://…" would otherwise fail the absolute-URL check server-side and get
+  // {{baseUrl}} prepended). Reflect the trim in the inputs so the user sees it was cleaned, and
+  // return the cleaned endpoint for the caller to act on.
+  const withTrimmedUrl = (e: ApiEndpoint): ApiEndpoint => {
+    const baseUrl = (e.baseUrl ?? '').trim();
+    const path = (e.path ?? '').trim();
+    if (baseUrl === (e.baseUrl ?? '') && path === (e.path ?? '')) return e;
+    const next = { ...e, baseUrl, path };
+    setEp(next);
+    return next;
+  };
+
   // Convert the current request into a curl command string and copy it to the clipboard
   const copyAsCurl = () => {
     const q = ep.queryParams
@@ -245,12 +258,14 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
   };
 
   const send = async () => {
+    const cur = withTrimmedUrl(ep);
+    const sendUrl = `${cur.baseUrl || ''}${cur.path || ''}`;
     // Locked endpoints ask for confirmation before running (guards create/modify/delete calls).
     if (!scratch && ep.locked) {
       const ok = await confirm({
         message: t('req.lockConfirm', {
           method: ep.method,
-          url: fullUrl || ep.path || '(URL)',
+          url: sendUrl || cur.path || '(URL)',
         }),
         tone: 'warn',
       });
@@ -292,7 +307,7 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
       const res = await execute({
         endpointId: scratch ? undefined : ep.id,
         method: ep.method,
-        url: fullUrl,
+        url: sendUrl,
         headers: ep.headers,
         queryParams: ep.queryParams,
         bodyType: ep.bodyType,
@@ -313,7 +328,7 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
           : e?.message || t('resp.failed');
       const errRes: ExecuteResult = {
         historyId: '',
-        request: { method: ep.method, url: fullUrl, headers: {} },
+        request: { method: ep.method, url: sendUrl, headers: {} },
         response: null,
         success: false,
         error,
@@ -333,7 +348,7 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
     // setTimeout(0): runs reliably even in a background tab, so the last character
     // (onChange) flushed by blur is written to state before reading the latest value.
     await new Promise((r) => setTimeout(r, 0));
-    const cur = epRef.current;
+    const cur = withTrimmedUrl(epRef.current);
     setSaving(true);
     try {
       const saved = await updateEndpoint(cur.id, {
@@ -361,7 +376,7 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
   const saveAs = async () => {
     (document.activeElement as HTMLElement | null)?.blur();
     await new Promise((r) => setTimeout(r, 0));
-    const cur = epRef.current;
+    const cur = withTrimmedUrl(epRef.current);
     const name = await prompt({
       message: t('req.saveAsPrompt'),
       defaultValue: cur.name || t('req.newRequest'),
