@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Environment,
   VariableRule,
@@ -46,6 +46,24 @@ function EnvironmentsSection() {
   const [rows, setRows] = useState<[string, string][]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  // Display-only sort for the variables list (the DB order is unchanged). Edits still target the
+  // original row index; newly-added empty-key rows stay at the bottom so they don't jump to the top.
+  const [varSort, setVarSort] = useState<'default' | 'asc' | 'desc'>(
+    () => (localStorage.getItem('envVarSort') as 'default' | 'asc' | 'desc') || 'default',
+  );
+  useEffect(() => localStorage.setItem('envVarSort', varSort), [varSort]);
+
+  const displayedRows = useMemo(() => {
+    const indexed = rows.map((row, i) => ({ row, i }));
+    if (varSort === 'default') return indexed;
+    return [...indexed].sort((a, b) => {
+      const ak = a.row[0];
+      const bk = b.row[0];
+      if (!ak || !bk) return !ak && !bk ? 0 : ak ? -1 : 1; // empty keys sink to the bottom
+      const cmp = ak.localeCompare(bk, undefined, { numeric: true, sensitivity: 'base' });
+      return varSort === 'asc' ? cmp : -cmp;
+    });
+  }, [rows, varSort]);
 
   const flash = (msg: string) => {
     setNote(msg);
@@ -193,8 +211,21 @@ function EnvironmentsSection() {
                   setSelected({ ...selected, name: e.target.value })
                 }
               />
+              <div className="obj-editor-head">
+                <span className="obj-editor-title">{t('env.varsTitle')}</span>
+                <select
+                  className="var-sort"
+                  value={varSort}
+                  onChange={(e) => setVarSort(e.target.value as 'default' | 'asc' | 'desc')}
+                  title={t('env.sortTitle')}
+                >
+                  <option value="default">{t('env.sortDefault')}</option>
+                  <option value="asc">{t('env.sortAsc')}</option>
+                  <option value="desc">{t('env.sortDesc')}</option>
+                </select>
+              </div>
               <div className="obj-editor">
-                {rows.map(([k, v], i) => (
+                {displayedRows.map(({ row: [k, v], i }) => (
                   <div className="kv-row" key={i}>
                     <input
                       className="kv-key"

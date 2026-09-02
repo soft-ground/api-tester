@@ -1828,6 +1828,27 @@ textarea:focus {
   flex-direction: column;
   gap: 6px;
 }
+/* Header above the variables list: title + display-order sort control. */
+.obj-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+.obj-editor-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted);
+}
+.var-sort {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 .rule-name-row {
   display: flex;
   gap: 8px;
