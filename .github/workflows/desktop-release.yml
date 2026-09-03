@@ -9,8 +9,8 @@
 # optionalDependency Postgres binary matching the runner's os+cpu):
 #   windows-latest -> NSIS .exe (x64)
 #   ubuntu-latest  -> .AppImage (x86_64)
-#   macos-13       -> .dmg (Intel / x64)      <- runs on Intel Macs
-#   macos-14       -> .dmg (Apple Silicon / arm64)
+#   macos-14       -> two dmgs: arm64 (Apple Silicon, native) + x64 (Intel, cross-built here
+#                    because GitHub retired the Intel macos-13 runners)
 # Builds are UNSIGNED (no certificate configured) — Windows shows a dismissible SmartScreen
 # prompt, macOS needs a right-click -> Open (Gatekeeper). See milestone 6 for warning-free
 # distribution (code signing + notarization).
@@ -31,9 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-13 = Intel (x64), macos-14 = Apple Silicon (arm64) — build both so the dmg runs
-        # natively on each Mac architecture with the matching embedded-Postgres binary.
-        os: [windows-latest, ubuntu-latest, macos-13, macos-14]
+        # macos-14 (Apple Silicon) builds BOTH mac arches — arm64 natively and x64 by cross-target
+        # — because GitHub has retired the Intel macos-13 runners, so an Intel-native job just
+        # queues forever. The x64 embedded-Postgres binary is fetched explicitly for the x64 dmg.
+        os: [windows-latest, ubuntu-latest, macos-14]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -57,12 +58,35 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
+      # Windows/Linux: one native installer. `npm run dist` = build + prep:server + electron-builder.
       - name: Package the host-OS installer (prunes the server first)
+        if: runner.os != 'macOS'
         working-directory: desktop
         run: npm run dist
         env:
           # Unsigned builds: don't let electron-builder hunt for a signing identity (Windows
-          # Authenticode / macOS codesign). macOS still receives an ad-hoc signature so it runs.
+          # Authenticode / macOS codesign).
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      # macOS: build both arm64 (native) and x64 (cross) dmgs on this Apple-Silicon runner.
+      # embedded-postgres ships a per-arch Postgres binary; npm only installed the arm64 one, so
+      # fetch the darwin-x64 binary too (electron-builder then bundles each arch's dmg with the
+      # matching one via its own os/cpu filtering). Version is pulled from embedded-postgres's own
+      # optionalDependencies so it always matches. A direct file require() sidesteps the package's
+      # restrictive "exports" field.
+      - name: Add the Intel (x64) Postgres binary for the cross-arch mac build
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        run: |
+          ver=$(node -p "require('./node_modules/embedded-postgres/package.json').optionalDependencies['@embedded-postgres/darwin-x64']")
+          echo "Installing @embedded-postgres/darwin-x64@${ver}"
+          npm install "@embedded-postgres/darwin-x64@${ver}" --no-save --cpu=x64 --os=darwin --force --no-audit --no-fund
+
+      - name: Package the macOS installers (x64 + arm64)
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        run: npm run build && npm run prep:server && npx electron-builder --mac dmg --x64 --arm64 --publish never
+        env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       # Installers + electron-updater metadata (latest*.yml) + *.blockmap (differential updates).
