@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Environment,
   VariableRule,
@@ -27,6 +27,23 @@ function move<T>(arr: T[], from: number, to: number): T[] {
   return next;
 }
 
+// Compute the display order (a list of indices into `rows`) for the variables list. Display-only —
+// the DB stores variables as a JSON object, so this never changes what is saved. Empty-key rows sink
+// to the bottom. This is a *snapshot*: it is recomputed only at commit points (select / sort change /
+// add / delete / save), never on every keystroke, so typing a key does not make its row jump — the
+// re-sort happens when the user saves.
+function orderRows(rows: [string, string][], sort: 'default' | 'asc' | 'desc'): number[] {
+  const idx = rows.map((_, i) => i);
+  if (sort === 'default') return idx;
+  return idx.sort((a, b) => {
+    const ak = rows[a][0];
+    const bk = rows[b][0];
+    if (!ak || !bk) return !ak && !bk ? 0 : ak ? -1 : 1; // empty keys sink to the bottom
+    const cmp = ak.localeCompare(bk, undefined, { numeric: true, sensitivity: 'base' });
+    return sort === 'asc' ? cmp : -cmp;
+  });
+}
+
 export default function EnvironmentsPage() {
   return (
     <div className="env-page">
@@ -44,29 +61,19 @@ function EnvironmentsSection() {
   const [envs, setEnvs] = useState<Environment[]>([]);
   const [selected, setSelected] = useState<Environment | null>(null);
   const [rows, setRows] = useState<[string, string][]>([]);
+  // `order` is the visible row sequence (indices into `rows`), frozen while editing so rows don't
+  // jump as the user types. It is recomputed only on select / sort change / add / delete / save.
+  const [order, setOrder] = useState<number[]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  // Display-only ordering for the variables list (the DB order is unchanged). "name" sorts by key
-  // with locale-aware collation so multilingual keys order naturally, no ascending/descending
-  // wording needed. Edits still target the original row index; newly-added empty-key rows stay at
-  // the bottom so they don't jump to the top.
+  // Display-only ordering for the variables list (the DB order is unchanged). "asc"/"desc" sort by
+  // key with locale-aware collation so multilingual keys order naturally. Edits target the original
+  // row index; newly-added rows stay at the bottom until the next save.
   const [varSort, setVarSort] = useState<'default' | 'asc' | 'desc'>(() => {
     const s = localStorage.getItem('envVarSort');
     return s === 'asc' || s === 'desc' ? s : 'default';
   });
   useEffect(() => localStorage.setItem('envVarSort', varSort), [varSort]);
-
-  const displayedRows = useMemo(() => {
-    const indexed = rows.map((row, i) => ({ row, i }));
-    if (varSort === 'default') return indexed;
-    return [...indexed].sort((a, b) => {
-      const ak = a.row[0];
-      const bk = b.row[0];
-      if (!ak || !bk) return !ak && !bk ? 0 : ak ? -1 : 1; // empty keys sink to the bottom
-      const cmp = ak.localeCompare(bk, undefined, { numeric: true, sensitivity: 'base' });
-      return varSort === 'asc' ? cmp : -cmp;
-    });
-  }, [rows, varSort]);
 
   const flash = (msg: string) => {
     setNote(msg);
@@ -92,8 +99,10 @@ function EnvironmentsSection() {
     const fresh = await listEnvironments();
     setEnvs(fresh);
     const cur = fresh.find((e) => e.id === env.id) ?? env;
+    const entries = Object.entries(cur.variables ?? {});
     setSelected(cur);
-    setRows(Object.entries(cur.variables ?? {}));
+    setRows(entries);
+    setOrder(orderRows(entries, varSort));
   };
 
   const add = async () => {
@@ -113,7 +122,12 @@ function EnvironmentsSection() {
       name: selected.name,
       variables,
     });
+    // Commit point: reload the (empty-key-stripped) rows and re-apply the sort now, so variables
+    // added/renamed during this edit settle into their sorted position only after Save.
+    const entries = Object.entries(variables);
     setSelected(saved);
+    setRows(entries);
+    setOrder(orderRows(entries, varSort));
     refresh();
     flash(t('req.saved'));
   };
@@ -219,7 +233,11 @@ function EnvironmentsSection() {
                 <select
                   className="var-sort"
                   value={varSort}
-                  onChange={(e) => setVarSort(e.target.value as 'default' | 'asc' | 'desc')}
+                  onChange={(e) => {
+                    const s = e.target.value as 'default' | 'asc' | 'desc';
+                    setVarSort(s);
+                    setOrder(orderRows(rows, s));
+                  }}
                   title={t('env.sortTitle')}
                 >
                   <option value="default">{t('env.sortDefault')}</option>
@@ -228,39 +246,56 @@ function EnvironmentsSection() {
                 </select>
               </div>
               <div className="obj-editor">
-                {displayedRows.map(({ row: [k, v], i }) => (
-                  <div className="kv-row" key={i}>
-                    <input
-                      className="kv-key"
-                      placeholder={t('env.varNamePh')}
-                      value={k}
-                      onChange={(e) => {
-                        const next = [...rows];
-                        next[i] = [e.target.value, v];
-                        setRows(next);
-                      }}
-                    />
-                    <input
-                      className="kv-value"
-                      placeholder={t('env.varValuePh')}
-                      value={v}
-                      onChange={(e) => {
-                        const next = [...rows];
-                        next[i] = [k, e.target.value];
-                        setRows(next);
-                      }}
-                    />
-                    <button
-                      className="kv-del"
-                      onClick={() => setRows(rows.filter((_, idx) => idx !== i))}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                {order.map((i) => {
+                  const row = rows[i];
+                  if (!row) return null;
+                  const [k, v] = row;
+                  return (
+                    <div className="kv-row" key={i}>
+                      <input
+                        className="kv-key"
+                        placeholder={t('env.varNamePh')}
+                        value={k}
+                        onChange={(e) => {
+                          const next = [...rows];
+                          next[i] = [e.target.value, v];
+                          setRows(next);
+                        }}
+                      />
+                      <input
+                        className="kv-value"
+                        placeholder={t('env.varValuePh')}
+                        value={v}
+                        onChange={(e) => {
+                          const next = [...rows];
+                          next[i] = [k, e.target.value];
+                          setRows(next);
+                        }}
+                      />
+                      <button
+                        className="kv-del"
+                        onClick={() => {
+                          setRows(rows.filter((_, idx) => idx !== i));
+                          // Drop this index from the order and shift the higher ones down by one.
+                          setOrder(
+                            order
+                              .filter((idx) => idx !== i)
+                              .map((idx) => (idx > i ? idx - 1 : idx)),
+                          );
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
                 <button
                   className="btn-ghost kv-add"
-                  onClick={() => setRows([...rows, ['', '']])}
+                  onClick={() => {
+                    // Append at the bottom and keep it there until the next save (no live re-sort).
+                    setOrder([...order, rows.length]);
+                    setRows([...rows, ['', '']]);
+                  }}
                 >
                   {t('env.addVar')}
                 </button>
