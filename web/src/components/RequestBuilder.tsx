@@ -3,12 +3,14 @@ import {
   ApiEndpoint,
   AuthType,
   BodyType,
+  Environment,
   ExecuteResult,
   MultipartPart,
   VarName,
   createEndpoint,
   execute,
   getAvailableNames,
+  listEnvironments,
   updateEndpoint,
 } from '../api/client';
 import BodyFieldsEditor from './BodyFieldsEditor';
@@ -156,6 +158,10 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [names, setNames] = useState<VarName[]>([]);
+  // The active environment profile (excludes the always-on shared group). null = none active, in
+  // which case only shared-group variables apply — surfaced in the vars hint row so the user knows
+  // which profile their {{vars}} resolve against before sending.
+  const [activeEnv, setActiveEnv] = useState<Environment | null>(null);
   const [blocked, setBlocked] = useState<ExecuteResult | null>(null);
   const [showVars, setShowVars] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -195,9 +201,13 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
     setResult(null);
   };
 
-  // Load variable names for autocomplete (refreshed each time the request builder opens)
+  // Load variable names for autocomplete + the active environment (refreshed each time the request
+  // builder opens, so activating a different profile in the Environments menu is reflected here).
   useEffect(() => {
     getAvailableNames().then(setNames).catch(() => setNames([]));
+    listEnvironments()
+      .then((envs) => setActiveEnv(envs.find((e) => e.isActive && !e.isShared) ?? null))
+      .catch(() => setActiveEnv(null));
   }, [endpoint.id]);
 
   const patch = (p: Partial<ApiEndpoint>) => setEp({ ...ep, ...p });
@@ -492,6 +502,18 @@ export default function RequestBuilder({ endpoint, onSaved, scratch }: Props) {
       </div>
 
       <div className="vars-hint-row">
+        {activeEnv ? (
+          <span className="active-env-tag" title={t('req.activeEnvTitle')}>
+            🌐 {t('req.activeEnv', { name: activeEnv.name })}
+          </span>
+        ) : (
+          <span
+            className="active-env-tag none"
+            title={t('req.noActiveEnvTitle')}
+          >
+            🌐 {t('req.noActiveEnv')}
+          </span>
+        )}
         <button className="btn-ghost" onClick={() => setShowVars(!showVars)}>
           {showVars ? '▾' : '▸'}{' '}
           {t('req.varsAvailable', { count: names.length })}

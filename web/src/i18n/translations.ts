@@ -127,6 +127,10 @@ const ko: Dict = {
   'req.clearResultTitle': '요청·응답 결과 영역 비우기',
   'req.varsAvailable': '사용 가능한 변수 {count}개',
   'req.varsHint': '입력창에 {{ 를 치면 자동완성됩니다.',
+  'req.activeEnv': '활성 환경: {name}',
+  'req.activeEnvTitle': '요청에 적용되는 환경 변수 프로파일입니다.',
+  'req.noActiveEnv': '활성 환경 없음',
+  'req.noActiveEnvTitle': '활성화된 환경이 없습니다 — 공유 그룹 변수만 적용됩니다.',
   'req.send': '전송',
 
   // response viewer
@@ -510,6 +514,10 @@ const en: Dict = {
   'req.clearResultTitle': 'Clear the request/response result',
   'req.varsAvailable': '{count} variables available',
   'req.varsHint': 'Type {{ in a field for autocomplete.',
+  'req.activeEnv': 'Active env: {name}',
+  'req.activeEnvTitle': 'The environment variable profile applied to requests.',
+  'req.noActiveEnv': 'No active environment',
+  'req.noActiveEnvTitle': 'No environment is active — only shared-group variables apply.',
   'req.send': 'Send',
 
   'resp.empty': 'Send a request to see the response here.',
