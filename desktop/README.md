@@ -70,8 +70,9 @@ Then `main.ts` sets `STATIC_DIR` to the bundled `web` resources and the window l
 | 1 | Electron boots Nest as a child process, health-gated window | **done** |
 | 2 | Nest serves the web UI (`STATIC_DIR`) so the window shows the real app | **done** |
 | 3 | Embedded Postgres (`src/db.ts`) + auto `migrate deploy` — no external DB, no `DATABASE_URL` | **done** |
-| 4 | `electron-builder` **unsigned** installer (bundles server + prisma + embedded PG) | **in progress** |
-| 5 | Code signing / notarization + cross-OS Prisma engines + auto-update | planned |
+| 4 | `electron-builder` **unsigned** installer (bundles server + prisma + embedded PG) | **done** |
+| 5 | Auto-update (`electron-updater`) + cross-OS installers (Win/Linux/macOS, native CI runners) | **done** |
+| 6 | Code signing / notarization for warning-free downloads | planned |
 
 ## Run (dev)
 
@@ -116,7 +117,18 @@ so the server must be built (`build:deps`) beforehand.
 
 The result is **unsigned**: it runs locally, and a copy downloaded from the internet shows a
 dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would need a right-click
-→ Open (or `xattr -dr com.apple.quarantine`). See milestone 5 for warning-free distribution.
+→ Open (or `xattr -dr com.apple.quarantine`). See milestone 6 for warning-free distribution.
 
-> Not yet wired: the Prisma engine is **Windows-only** (cross-OS needs `binaryTargets` in
-> `schema.prisma`). Packaged runs need verification on a clean machine.
+## Cross-platform builds
+
+The release workflow (`.github/workflows/desktop-release.yml`) builds: `windows-latest` → NSIS
+`.exe`, `ubuntu-latest` → `.AppImage`, and `macos-14` (Apple Silicon) → **two** dmgs, arm64
+(native) and x64 (Intel, cross-built). The Prisma query engine defaults to `native`, and
+`embedded-postgres` ships a **per-OS-and-arch** Postgres binary as an optional dependency (npm
+installs only the runner's), so the x64 mac build explicitly pulls the `darwin-x64` Postgres binary
+and electron-builder bundles each dmg with the matching one. GitHub retired the Intel `macos-13`
+runners, which is why the Intel dmg is cross-built on the arm64 runner rather than natively. (For
+broader Linux reach across different `glibc`/OpenSSL variants, add explicit `binaryTargets` to
+`schema.prisma`.) All outputs are unsigned/ad-hoc-signed, so a downloaded macOS app needs a
+right-click → Open on first launch. `workflow_dispatch` runs the build without publishing, so the
+per-OS artifacts can be downloaded from the Actions run for testing before a real tagged release.
