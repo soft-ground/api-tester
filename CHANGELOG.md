@@ -9,6 +9,31 @@ Published images for each release are on GHCR (`ghcr.io/soft-ground/api-tester-w
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-09-09
+
+### Added
+- **JSON → CSV/Excel converter tool** — a standalone page (under a new **Tools** nav section) where
+  you paste arbitrary JSON, preview it as table(s), and save it as CSV or Excel. It reuses the same
+  flattening pipeline as the response viewer, so nested/wrapped payloads convert identically; it is
+  entirely client-side.
+- **Active environment shown on the request screen** — the variables hint row now displays which
+  environment profile the request's `{{vars}}` resolve against, or an explicit "no active
+  environment" tag (a real state — before activating one, or after deleting the active env — in
+  which case only shared-group variables apply).
+- **Sort environment variables by name** — the variables list can be shown by name ascending or
+  descending (or the default insertion order). Display-only, with locale-aware collation; it does
+  not change what is stored.
+- **Resizable layout** — the main sidebar width and the JSON-tools paste/preview split can be
+  dragged to resize, and the sizes are remembered.
+
+### Fixed
+- **URL/Path whitespace is trimmed on Save & Send** — a leading/trailing space (usually a
+  copy-paste artifact) is removed automatically, so a " https://…" no longer fails the absolute-URL
+  check and gets `{{baseUrl}}` prepended.
+- **Environment variables no longer jump while typing** under a name sort — the order is frozen
+  during editing and re-applied on Save, so a freshly added variable stays put until you save it.
+- Sidebar footer controls alignment.
+
 ## [1.7.0] - 2026-08-20
 
 ### Added
@@ -139,7 +164,8 @@ Initial public open-source release (SOFT GROUND, MIT).
 - Import from OpenAPI (Swagger) and curl; full-workspace backup import/export (merge-only).
 - Self-hosted Docker deployment and a bilingual (English / Korean) UI.
 
-[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/soft-ground/api-tester/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/soft-ground/api-tester/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/soft-ground/api-tester/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/soft-ground/api-tester/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/soft-ground/api-tester/compare/v1.4.0...v1.5.0
