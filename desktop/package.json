@@ -4,6 +4,7 @@
   "private": true,
   "description": "Desktop (Windows/macOS/Linux) shell for API Tester — runs the Nest server + UI locally, no Docker.",
   "author": "SOFT GROUND <admin@soft-ground.com>",
+  "homepage": "https://github.com/soft-ground/api-tester",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
