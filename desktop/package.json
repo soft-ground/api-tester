@@ -2,7 +2,8 @@
   "name": "api-tester-desktop",
   "version": "0.1.3",
   "private": true,
-  "description": "Desktop (Windows/macOS) shell for API Tester — runs the Nest server + UI locally, no Docker.",
+  "description": "Desktop (Windows/macOS/Linux) shell for API Tester — runs the Nest server + UI locally, no Docker.",
+  "author": "SOFT GROUND <admin@soft-ground.com>",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",

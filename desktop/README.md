@@ -122,7 +122,7 @@ dismissible **SmartScreen** prompt ("More info → Run anyway"). macOS would nee
 ## Cross-platform builds
 
 The release workflow (`.github/workflows/desktop-release.yml`) builds: `windows-latest` → NSIS
-`.exe`, `ubuntu-latest` → `.AppImage`, and `macos-14` (Apple Silicon) → **two** dmgs, arm64
+`.exe`, `ubuntu-latest` → `.deb` + portable `.tar.gz`, and `macos-14` (Apple Silicon) → **two** dmgs, arm64
 (native) and x64 (Intel, cross-built). The Prisma query engine defaults to `native`, and
 `embedded-postgres` ships a **per-OS-and-arch** Postgres binary as an optional dependency (npm
 installs only the runner's), so the x64 mac build explicitly pulls the `darwin-x64` Postgres binary

@@ -8,7 +8,7 @@
 # engine, and the embedded Postgres binary are all host-specific (npm only installs the
 # optionalDependency Postgres binary matching the runner's os+cpu):
 #   windows-latest -> NSIS .exe (x64)
-#   ubuntu-latest  -> .AppImage (x86_64)
+#   ubuntu-latest  -> .deb + portable .tar.gz (x86_64)
 #   macos-14       -> two dmgs: arm64 (Apple Silicon, native) + x64 (Intel, cross-built here
 #                    because GitHub retired the Intel macos-13 runners)
 # Builds are UNSIGNED (no certificate configured) — Windows shows a dismissible SmartScreen
@@ -97,7 +97,8 @@ jobs:
           name: desktop-${{ matrix.os }}
           path: |
             desktop/release/*.exe
-            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/*.tar.gz
             desktop/release/*.dmg
             desktop/release/*.zip
             desktop/release/*.blockmap

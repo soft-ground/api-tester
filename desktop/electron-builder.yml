@@ -72,6 +72,12 @@ mac:
   target: dmg
   artifactName: API-Tester-${version}-${arch}.${ext}
   category: public.app-category.developer-tools
+# Linux: ship a .deb (apt installs it and pulls the Electron/Chromium system libs — libnss3, gtk,
+# etc. — automatically) and a portable .tar.gz (extract and run, no FUSE). AppImage was dropped: it
+# needs FUSE on the host and does not declare those library dependencies, so users had to install
+# them by hand. The .deb maintainer comes from package.json `author`.
 linux:
   icon: assets/icon.png
-  target: AppImage
+  target:
+    - deb
+    - tar.gz
