@@ -7,7 +7,7 @@
   "homepage": "https://github.com/soft-ground/api-tester",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-static.mjs",
     "build:server": "npm --prefix ../server run build",
     "build:web": "npm --prefix ../web run build",
     "build:deps": "npm run build:server && npm run build:web",

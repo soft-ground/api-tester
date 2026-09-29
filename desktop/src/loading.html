@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+    <title>API Tester</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #14161b;
+        --card: #1c1f26;
+        --text: #e8eaed;
+        --muted: #8b909c;
+        --accent: #4f8cff;
+        --danger: #e5534b;
+        --border: #2b2f38;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-app-region: drag;
+      }
+      .card {
+        width: 380px;
+        padding: 32px 28px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--card);
+        text-align: center;
+        -webkit-app-region: no-drag;
+      }
+      .brand {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 16px;
+        border: 3px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .stage {
+        font-size: 14px;
+        color: var(--text);
+      }
+      .hidden {
+        display: none;
+      }
+      .error-icon {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        background: var(--danger);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .error-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .error-detail {
+        font-size: 12px;
+        color: var(--muted);
+        max-height: 90px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        text-align: left;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 18px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      button {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="brand">API Tester</div>
+
+      <div id="progress">
+        <div class="spinner"></div>
+        <div class="stage" id="stage-text">Starting…</div>
+      </div>
+
+      <div id="error" class="hidden">
+        <div class="error-icon">!</div>
+        <div class="error-title" id="error-title">Failed to start</div>
+        <div class="error-detail" id="error-detail"></div>
+        <div class="actions">
+          <button id="btn-retry" class="primary"></button>
+          <button id="btn-logs"></button>
+          <button id="btn-quit"></button>
+        </div>
+      </div>
+    </div>
+
+    <script src="loading.js"></script>
+  </body>
+</html>
