@@ -38,8 +38,7 @@ make the common loop of *"test my own server, keep the data local, don't fight a
 
 **You may be better served elsewhere if you need:**
 
-- A polished cross-platform desktop client or git-versioned collections — see **Bruno** or
-  **Hoppscotch** (both local and open-source), or **Insomnia** / **Postman**.
+- Git-versioned collections — see **Bruno** (local and open-source), or **Insomnia** / **Postman**.
 - A large collaboration platform (shared workspaces, mock servers, monitors, broad integrations) —
   **Postman**.
 - Code-based regression that runs in CI against a spec or a URL — **Karate**, **REST Assured**,
@@ -174,6 +173,22 @@ docker compose -f docker-compose.ghcr.yml up -d
 
 Images are published on each release. Pin a specific version by replacing `:latest` with `:1.8.0`
 in [docker-compose.ghcr.yml](./docker-compose.ghcr.yml).
+
+---
+
+## Desktop app (no Docker)
+
+Prefer not to run Docker at all? **API Tester Desktop** is an Electron build of the same app —
+it bundles the Nest server, the web UI, and an embedded Postgres, and runs fully standalone.
+
+Download the latest installer for **Windows (.exe), macOS (.dmg, Intel + Apple Silicon), or
+Linux (.deb / .tar.gz)** from the [Releases page](https://github.com/soft-ground/api-tester/releases) —
+look for the entry tagged `desktop-vX.Y.Z` (versioned separately from the web/server releases
+above). It auto-updates in the background once installed.
+
+> The installers are currently unsigned, so Windows SmartScreen and macOS Gatekeeper show a
+> one-time warning on first launch (dismissible — right-click → Open on macOS). We're pursuing
+> free code signing for this OSS project via [SignPath.io](https://signpath.io/) to remove this.
 
 ---
 

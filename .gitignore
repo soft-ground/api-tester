@@ -25,3 +25,8 @@ server/prisma/*.db
 *backup*.json
 api-tester-backup-*.json
 
+# Local-only agent scratch notes — not part of the public release
+CLAUDE.md
+PLAN.md
+signpath-application-draft.md
+
