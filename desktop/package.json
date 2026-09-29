@@ -12,10 +12,11 @@
     "build:web": "npm --prefix ../web run build",
     "build:deps": "npm run build:server && npm run build:web",
     "prep:server": "node scripts/prep-server.mjs",
+    "build:pg-template": "node scripts/build-pg-template.mjs",
     "start": "electron .",
     "dev": "npm run build && electron .",
-    "pack": "npm run build && npm run prep:server && electron-builder --dir",
-    "dist": "npm run build && npm run prep:server && electron-builder --publish never"
+    "pack": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --dir",
+    "dist": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --publish never"
   },
   "devDependencies": {
     "electron": "^31.3.0",

@@ -43,6 +43,12 @@ extraResources:
     to: server/package.json
   - from: ../web/dist
     to: web
+  # A pre-run initdb, built by scripts/build-pg-template.mjs (run before this by `pack`/`dist`).
+  # db.ts copies it instead of running initdb itself on first launch, when its ARCH_TAG matches
+  # the machine exactly. Always exists (possibly empty — see that script) so this entry never
+  # fails to find its `from` path even when no template could be built for this target.
+  - from: resources/pg-template
+    to: pg-template
 
 # App icon (generated from web/public/favicon.svg — see assets/). buildResources default (build/)
 # is gitignored here, so the icons live in assets/ and are referenced explicitly per platform.
