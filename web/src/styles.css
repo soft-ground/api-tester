@@ -343,6 +343,34 @@ body {
   background: var(--muted);
 }
 
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--ok);
+  border: 1px solid var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  cursor: pointer;
+}
+
+.update-badge:hover {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+.update-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.collapsed .update-badge {
+  display: none;
+}
+
 .content {
   overflow: auto;
   padding: 28px 32px;
