@@ -521,3 +521,5 @@ api-tester/
 ## License
 
 [MIT](./LICENSE) — Copyright (c) 2026 SOFT GROUND
+
+See also: [Privacy Policy](./PRIVACY.md), [Code of Conduct](./CODE_OF_CONDUCT.md).
