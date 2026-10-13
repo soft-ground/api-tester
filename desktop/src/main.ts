@@ -141,6 +141,14 @@ function waitForHealth(port: number, timeoutMs = 30_000): Promise<void> {
   });
 }
 
+// embedded-postgres package that holds the binaries for this platform+arch.
+const ENGINE_PACKAGE: Record<string, string> = {
+  'win32-x64': 'windows-x64',
+  'linux-x64': 'linux-x64',
+  'darwin-x64': 'darwin-x64',
+  'darwin-arm64': 'darwin-arm64',
+};
+
 // Fail early with an actionable message instead of a cryptic child-process crash.
 function preflight(): { ok: true } | { ok: false; message: string } {
   const entry = serverEntry();
@@ -162,6 +170,23 @@ function preflight(): { ok: true } | { ok: false; message: string } {
         `Build it first (from the repo root):\n  cd web && npm install && npm run build\n\n` +
         `Or, from this folder, run: npm run build:deps`,
     };
+  }
+  // The Postgres binaries live in a per-platform optional npm package. If an installer was built
+  // without it, spawning fails with a cryptic module-resolution error; say what is actually wrong
+  // and how to fix it. (Not retried: reinstalling is the only remedy.)
+  const enginePkg = ENGINE_PACKAGE[`${process.platform}-${process.arch}`];
+  if (enginePkg) {
+    const engineDir = path.join(__dirname, '..', 'node_modules', '@embedded-postgres', enginePkg);
+    if (!fs.existsSync(engineDir)) {
+      return {
+        ok: false,
+        message:
+          'This installation is damaged: the database engine files are missing ' +
+          `(@embedded-postgres/${enginePkg}).\n\n` +
+          'Please install the latest version from the Releases page (Help > Releases). ' +
+          'Your saved data is kept — reinstalling does not remove it.',
+      };
+    }
   }
   return { ok: true };
 }
@@ -236,7 +261,6 @@ async function boot(): Promise<void> {
     try {
       await bootAttempt(port);
       await mainWindow?.loadURL(process.env.VITE_DEV_SERVER_URL ?? `http://127.0.0.1:${port}`);
-      initAutoUpdater();
       return;
     } catch (err) {
       log(`[boot] attempt ${attempt}/${MAX_BOOT_ATTEMPTS} failed: ${(err as Error).message}`);
@@ -394,6 +418,10 @@ app.whenReady().then(async () => {
   }
   applyAppMenu();
   mainWindow = createMainWindow();
+  // Independent of the backend boot: a release whose backend cannot start (damaged install, a bad
+  // build) must still be able to find and download its own fix. Starting this only after a
+  // successful boot — as it used to — meant a broken release could never update itself.
+  initAutoUpdater();
   mainWindow.webContents.once('did-finish-load', () => {
     void boot();
   });

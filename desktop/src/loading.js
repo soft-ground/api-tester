@@ -10,6 +10,10 @@ const STRINGS = {
     retryBtn: '다시 시도',
     logsBtn: '로그 폴더 열기',
     quitBtn: '종료',
+    updateReady: '새 버전 v{v}이(가) 준비되어 있습니다. 설치하면 이 문제가 해결될 수 있습니다.',
+    updateReadyBtn: '설치하고 다시 시작',
+    updateManual: '새 버전 v{v}이(가) 있습니다. 새로 설치하면 이 문제가 해결될 수 있습니다.',
+    updateManualBtn: '다운로드 페이지 열기',
   },
   en: {
     starting: 'Starting…',
@@ -21,6 +25,10 @@ const STRINGS = {
     retryBtn: 'Retry',
     logsBtn: 'Open logs folder',
     quitBtn: 'Quit',
+    updateReady: 'Version {v} is ready. Installing it may fix this.',
+    updateReadyBtn: 'Install and restart',
+    updateManual: 'Version {v} is available. Installing it may fix this.',
+    updateManualBtn: 'Open download page',
   },
 }[lang];
 
@@ -55,3 +63,32 @@ btnRetry.addEventListener('click', () => {
 });
 btnLogs.addEventListener('click', () => window.boot.openLogs());
 btnQuit.addEventListener('click', () => window.boot.quit());
+
+// A release that cannot boot can still have found its own fix (the updater starts before the
+// backend). Offer it here, where the user is stuck.
+const updateNote = document.getElementById('update-note');
+const updateText = document.getElementById('update-text');
+const btnUpdate = document.getElementById('btn-update');
+let updateStatus = null;
+
+function renderUpdate() {
+  if (!updateStatus) {
+    updateNote.classList.add('hidden');
+    return;
+  }
+  const ready = updateStatus.status === 'ready';
+  updateText.textContent = (ready ? STRINGS.updateReady : STRINGS.updateManual).replace('{v}', updateStatus.version);
+  btnUpdate.textContent = ready ? STRINGS.updateReadyBtn : STRINGS.updateManualBtn;
+  updateNote.classList.remove('hidden');
+}
+
+btnUpdate.addEventListener('click', () => {
+  if (!updateStatus || !window.desktop) return;
+  if (updateStatus.status === 'ready') window.desktop.restartToUpdate();
+  else window.desktop.openReleasesPage();
+});
+
+if (window.desktop) {
+  window.desktop.getUpdateStatus().then((s) => { updateStatus = s; renderUpdate(); }).catch(() => {});
+  window.desktop.onUpdateStatus((s) => { updateStatus = s; renderUpdate(); });
+}
