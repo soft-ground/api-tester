@@ -518,6 +518,14 @@ api-tester/
 
 ---
 
+## Community
+
+- **Questions, ideas, and what you built with it** — [Discussions](https://github.com/soft-ground/api-tester/discussions).
+- **Bugs** — [open an issue](https://github.com/soft-ground/api-tester/issues/new/choose); logs and steps to reproduce help a lot.
+- Pull requests are welcome. Please read the [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+---
+
 ## License
 
 [MIT](./LICENSE) — Copyright (c) 2026 SOFT GROUND
