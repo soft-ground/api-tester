@@ -41,10 +41,11 @@ const ko: Dict = {
   'health.down': '서버 응답 없음',
 
   // desktop app auto-update
-  'update.readyBtn': '업데이트 준비됨 v{version} · 재시작',
-  'update.readyTitle': 'v{version}이(가) 준비되었습니다. 클릭하면 지금 재시작하고 적용합니다.',
-  'update.manualBtn': '새 버전 v{version} · 다운로드 페이지 열기',
-  'update.manualTitle': 'v{version}이(가) 나왔습니다. 클릭하면 다운로드 페이지를 엽니다.',
+  'update.readyTitle': '업데이트 준비됨',
+  'update.readyAction': '지금 재시작',
+  'update.manualTitle': '새 버전이 나왔습니다',
+  'update.manualAction': '다운로드 페이지 열기',
+  'update.dismiss': '닫기',
 
   // layout / shell
   'shell.collapse': '접기',
@@ -439,10 +440,11 @@ const en: Dict = {
   'health.down': 'No response',
 
   // desktop app auto-update
-  'update.readyBtn': 'Update ready v{version} · Restart',
-  'update.readyTitle': 'v{version} is ready. Click to restart and apply it now.',
-  'update.manualBtn': 'New version v{version} · Open download page',
-  'update.manualTitle': 'v{version} is out. Click to open the download page.',
+  'update.readyTitle': 'Update ready',
+  'update.readyAction': 'Restart now',
+  'update.manualTitle': 'A new version is out',
+  'update.manualAction': 'Open download page',
+  'update.dismiss': 'Dismiss',
 
   'shell.collapse': 'Collapse',
   'shell.expand': 'Expand',

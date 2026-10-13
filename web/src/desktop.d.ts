@@ -10,6 +10,8 @@ export interface DesktopUpdateStatus {
 export interface DesktopBridge {
   isDesktop: true;
   onUpdateStatus: (cb: (s: DesktopUpdateStatus) => void) => () => void;
+  // Current status (or null): the shell's 'update:status' event fires only once.
+  getUpdateStatus: () => Promise<DesktopUpdateStatus | null>;
   restartToUpdate: () => void;
   openReleasesPage: () => void;
 }

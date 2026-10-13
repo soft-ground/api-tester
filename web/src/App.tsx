@@ -7,7 +7,6 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import DesktopUpdateBadge from './components/DesktopUpdateBadge';
 import HealthBadge from './components/HealthBadge';
 import SearchModal from './components/SearchModal';
 import CollectionsPage from './pages/CollectionsPage';
@@ -241,7 +240,6 @@ export default function App() {
               {t('shell.search')}
             </button>
             <HealthBadge />
-            <DesktopUpdateBadge />
             <button
               className="icon-btn"
               title={t('shell.toSidebar')}
@@ -298,7 +296,6 @@ export default function App() {
             {themeToggle}
             <HealthBadge />
           </div>
-          <DesktopUpdateBadge />
           {collapsed ? (
             <button
               className="icon-btn"

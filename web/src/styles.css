@@ -351,32 +351,73 @@ body {
   background: var(--muted);
 }
 
-.update-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  color: var(--ok);
+/* Floating desktop-update notice (bottom-right; the app's own toast is bottom-center). Rendered
+   at the app root, so it is independent of sidebar/header layout and the collapsed rail. */
+.update-card {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 90; /* above page content, below modals (100) */
+  width: 260px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--panel-2);
   border: 1px solid var(--ok);
-  background: color-mix(in srgb, var(--ok) 12%, transparent);
-  cursor: pointer;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+  word-break: keep-all;
 }
-
-.update-badge:hover {
-  background: color-mix(in srgb, var(--ok) 22%, transparent);
+.update-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-
-.update-badge .dot {
-  width: 6px;
-  height: 6px;
+.update-card .dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--ok);
+  flex-shrink: 0;
 }
-
-.collapsed .update-badge {
-  display: none;
+.update-card-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+}
+.update-card-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.update-card-close:hover {
+  color: var(--text);
+}
+.update-card-version {
+  color: var(--muted);
+  font-size: 12px;
+  padding-left: 16px;
+}
+.update-card-action {
+  margin-top: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+  color: var(--ok);
+  font-weight: 600;
+  cursor: pointer;
+}
+.update-card-action:hover {
+  background: color-mix(in srgb, var(--ok) 26%, transparent);
 }
 
 .content {

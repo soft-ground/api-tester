@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { LangProvider } from './i18n';
 import { DialogProvider } from './components/DialogProvider';
+import DesktopUpdateCard from './components/DesktopUpdateCard';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <DialogProvider>
         <BrowserRouter>
           <App />
+          <DesktopUpdateCard />
         </BrowserRouter>
       </DialogProvider>
     </LangProvider>
