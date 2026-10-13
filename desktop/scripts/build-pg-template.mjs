@@ -16,7 +16,7 @@
 // which is cross-built from an arm64 CI runner that generally can't execute an x64 postgres
 // binary to build a matching template — this script detects that (spawn/exec failure) and skips
 // cleanly rather than failing the whole packaging step.
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -50,7 +50,28 @@ async function main() {
   console.log(`[build-pg-template] built template for ${archTag()} at ${outDir}`);
 }
 
+// embedded-postgres keeps its binaries in a per-platform optional npm package. A *missing* package is
+// not the benign "can't run the other arch's binary" case below — it means npm silently skipped an
+// optional install and the app being built cannot start (this is how the 0.1.8 Windows installer
+// shipped broken). Fail here, loudly, instead of quietly producing an empty template.
+const ENGINE_PACKAGE = {
+  'win32-x64': 'windows-x64',
+  'linux-x64': 'linux-x64',
+  'darwin-x64': 'darwin-x64',
+  'darwin-arm64': 'darwin-arm64',
+};
+
 main().catch((err) => {
+  const hostPkg = ENGINE_PACKAGE[`${process.platform}-${process.arch}`];
+  if (hostPkg && !existsSync(join(desktopDir, 'node_modules', '@embedded-postgres', hostPkg))) {
+    console.error(
+      `[build-pg-template] FAILED: node_modules/@embedded-postgres/${hostPkg} is not installed. ` +
+        'npm skipped this optional dependency, so the packaged app would not start. ' +
+        'Re-run the install (npm install in desktop/) and check the registry/network output.',
+    );
+    console.error(err);
+    process.exit(1);
+  }
   console.warn(
     '[build-pg-template] skipping pre-built template (this platform likely cannot run the ' +
       "target postgres binary here, e.g. macOS x64 cross-built on an arm64 runner) — db.ts's " +
