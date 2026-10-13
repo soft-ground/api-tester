@@ -90,7 +90,7 @@ jobs:
         # one installed above). That's fine: db.ts only uses a template whose ARCH_TAG matches
         # the machine it's actually running on, so the arm64 dmg gets a faster first launch and
         # the x64 dmg safely falls back to a normal initdb, same as before this existed.
-        run: npm run build && npm run prep:server && npm run build:pg-template && npx electron-builder --mac dmg --x64 --arm64 --publish never
+        run: npm run build && npm run prep:server && npm run build:pg-template && npx electron-builder --mac dmg --x64 --arm64 --publish never && npm run verify:package
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 

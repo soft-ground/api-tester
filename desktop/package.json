@@ -13,10 +13,11 @@
     "build:deps": "npm run build:server && npm run build:web",
     "prep:server": "node scripts/prep-server.mjs",
     "build:pg-template": "node scripts/build-pg-template.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
     "start": "electron .",
     "dev": "npm run build && electron .",
-    "pack": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --dir",
-    "dist": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --publish never"
+    "pack": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --dir && npm run verify:package",
+    "dist": "npm run build && npm run prep:server && npm run build:pg-template && electron-builder --publish never && npm run verify:package"
   },
   "devDependencies": {
     "electron": "^31.3.0",
