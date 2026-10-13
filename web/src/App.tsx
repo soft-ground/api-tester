@@ -86,6 +86,24 @@ function LangSelect() {
   );
 }
 
+// Collapsed-rail variant of LangSelect: a 28px icon button showing the current language code that
+// cycles to the next language on click (the full-width dropdown doesn't fit the 56px rail).
+function LangCycle() {
+  const { lang, setLang, t } = useI18n();
+  const idx = LANGS.findIndex((l) => l.code === lang);
+  const next = LANGS[(idx + 1) % LANGS.length];
+  return (
+    <button
+      className="icon-btn lang-cycle"
+      title={`${t('shell.language')}: ${next.label}`}
+      aria-label={`${t('shell.language')}: ${next.label}`}
+      onClick={() => setLang(next.code)}
+    >
+      {lang.toUpperCase()}
+    </button>
+  );
+}
+
 // Catch-all for unknown client-side routes (nginx already falls back to index.html for deep links).
 function NotFound() {
   const { t } = useI18n();
@@ -275,13 +293,22 @@ export default function App() {
           <NavItems collapsed={collapsed} />
         </nav>
         <div className="sidebar-footer">
-          {!collapsed && <LangSelect />}
+          {collapsed ? <LangCycle /> : <LangSelect />}
           <div className="sidebar-footer-row">
             {themeToggle}
             <HealthBadge />
           </div>
           <DesktopUpdateBadge />
-          {!collapsed && (
+          {collapsed ? (
+            <button
+              className="icon-btn"
+              title={t('shell.toHeader')}
+              aria-label={t('shell.toHeader')}
+              onClick={() => setLayout('header')}
+            >
+              ▤
+            </button>
+          ) : (
             <button
               className="switch-layout"
               title={t('shell.toHeader')}
