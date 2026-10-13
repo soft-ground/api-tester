@@ -21,6 +21,15 @@ import * as path from 'node:path';
 import { startEmbeddedPostgres, type EmbeddedDb } from './db';
 import { installAppMenu } from './menu';
 
+// A development run (`electron .`) must never share the installed app's user data. Electron derives
+// the userData folder from package.json's "name", so both resolve to %APPDATA%\api-tester-desktop —
+// meaning a dev run would boot against the real embedded database, and routine "reset my test
+// data" cleanup would wipe the user's actual collections and history. Must run before anything
+// reads userData (the single-instance lock, the log file, the Postgres data dir).
+if (!app.isPackaged) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'api-tester-desktop-dev'));
+}
+
 let serverProc: ChildProcess | null = null;
 let embeddedDb: EmbeddedDb | null = null;
 let mainWindow: BrowserWindow | null = null;
