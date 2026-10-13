@@ -333,6 +333,10 @@ function applyAppMenu(): void {
 }
 
 ipcMain.handle('update:get-status', () => lastUpdateStatus);
+// Read synchronously by the preload so the renderer can show the installed version immediately.
+ipcMain.on('app:get-version', (e) => {
+  e.returnValue = app.getVersion();
+});
 
 ipcMain.on('boot:retry', () => {
   void boot();

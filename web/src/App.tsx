@@ -123,14 +123,19 @@ function NotFound() {
 // only the logo shows, so the collapsed rail still has an identity anchor.
 function Brand({ collapsed }: { collapsed?: boolean }) {
   const { t } = useI18n();
+  // The desktop shell reports the installed app's version; the browser/Docker build falls back to
+  // the web package version. Shown always, because "which version am I on?" is the first thing
+  // anyone asks when something is off or an update card mentions a newer one.
+  const version = window.desktop?.version ?? __APP_VERSION__;
   return (
     <Link
       className={`brand${collapsed ? ' brand-collapsed' : ''}`}
       to="/collections"
-      title={t('brand')}
+      title={`${t('brand')} v${version}`}
     >
       <img className="brand-logo" src="/favicon.svg" alt="" width={22} height={22} />
       {!collapsed && <span className="brand-name">{t('brand')}</span>}
+      {!collapsed && <span className="brand-version">v{version}</span>}
     </Link>
   );
 }

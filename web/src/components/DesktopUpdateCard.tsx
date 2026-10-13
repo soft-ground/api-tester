@@ -48,6 +48,7 @@ export default function DesktopUpdateCard() {
   if (!status || dismissed === status.version) return null;
 
   const ready = status.status === 'ready';
+  const current = window.desktop?.version;
   const dismiss = () => {
     try {
       sessionStorage.setItem(DISMISSED_KEY, status.version);
@@ -73,7 +74,9 @@ export default function DesktopUpdateCard() {
           ×
         </button>
       </div>
-      <div className="update-card-version">v{status.version}</div>
+      <div className="update-card-version">
+        {current && current !== status.version ? `v${current} → v${status.version}` : `v${status.version}`}
+      </div>
       <button
         className="update-card-action"
         onClick={() =>

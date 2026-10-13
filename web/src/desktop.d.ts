@@ -9,6 +9,8 @@ export interface DesktopUpdateStatus {
 
 export interface DesktopBridge {
   isDesktop: true;
+  // The installed desktop app version (app.getVersion()), available synchronously.
+  version: string;
   onUpdateStatus: (cb: (s: DesktopUpdateStatus) => void) => () => void;
   // Current status (or null): the shell's 'update:status' event fires only once.
   getUpdateStatus: () => Promise<DesktopUpdateStatus | null>;
@@ -17,6 +19,9 @@ export interface DesktopBridge {
 }
 
 declare global {
+  // Injected by vite (web/package.json version).
+  const __APP_VERSION__: string;
+
   interface Window {
     desktop?: DesktopBridge;
   }

@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('boot', {
 contextBridge.exposeInMainWorld('desktop', {
   // Marker the web app can feature-detect if it ever needs desktop-only behavior.
   isDesktop: true,
+  version: ipcRenderer.sendSync('app:get-version') as string,
   onUpdateStatus: (cb: (s: UpdateStatus) => void) => {
     const listener = (_e: unknown, payload: UpdateStatus) => cb(payload);
     ipcRenderer.on('update:status', listener);
