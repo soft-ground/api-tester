@@ -24,9 +24,3 @@ server/prisma/*.db
 # Backup files — may contain secrets (tokens, API keys, card numbers); never commit
 *backup*.json
 api-tester-backup-*.json
-
-# Local-only agent scratch notes — not part of the public release
-CLAUDE.md
-PLAN.md
-signpath-application-draft.md
-
