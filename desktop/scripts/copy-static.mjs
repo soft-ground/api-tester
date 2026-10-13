@@ -11,3 +11,5 @@ const desktopDir = join(here, '..');
 for (const file of ['loading.html', 'loading.js']) {
   copyFileSync(join(desktopDir, 'src', file), join(desktopDir, 'dist', file));
 }
+// The window icon (see createMainWindow). assets/ is not part of the packaged app files, but dist/ is.
+copyFileSync(join(desktopDir, 'assets', 'icon.png'), join(desktopDir, 'dist', 'icon.png'));

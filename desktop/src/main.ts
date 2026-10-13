@@ -256,6 +256,9 @@ function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
+    // Without this the title bar / taskbar show Electron's own icon in development and on Linux
+    // (Windows and macOS packaged builds take it from the exe / app bundle, but this is harmless).
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
