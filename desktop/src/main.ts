@@ -286,15 +286,38 @@ function initAutoUpdater(): void {
   autoUpdater.on('error', (err) => log(`[updater] ${err}`));
   if (SUPPORTS_SILENT_SELF_INSTALL) {
     autoUpdater.on('update-downloaded', (info) => {
-      mainWindow?.webContents.send('update:status', { status: 'ready', version: info.version });
+      publishUpdateStatus({ status: 'ready', version: info.version });
     });
   } else {
     autoUpdater.on('update-available', (info) => {
-      mainWindow?.webContents.send('update:status', { status: 'manual', version: info.version });
+      publishUpdateStatus({ status: 'manual', version: info.version });
     });
   }
   void autoUpdater.checkForUpdates().catch((err) => log(`[updater] ${err}`));
 }
+
+// The updater events fire exactly once, so the renderer can't be the source of truth: a page
+// reload or a React remount would lose the status and nothing would ever resend it. Remember it
+// here and let the renderer ask ('update:get-status') whenever it mounts.
+type UpdateStatus = { status: 'ready' | 'manual'; version: string };
+let lastUpdateStatus: UpdateStatus | null = null;
+
+function publishUpdateStatus(s: UpdateStatus): void {
+  lastUpdateStatus = s;
+  mainWindow?.webContents.send('update:status', s);
+  applyAppMenu(); // adds the "apply update" Help item once an update is ready
+}
+
+function applyAppMenu(): void {
+  const ready = lastUpdateStatus?.status === 'ready' ? lastUpdateStatus.version : null;
+  installAppMenu({
+    logsDir: path.dirname(logPath()),
+    releasesUrl: RELEASES_URL,
+    update: ready ? { version: ready, restart: () => autoUpdater.quitAndInstall() } : null,
+  });
+}
+
+ipcMain.handle('update:get-status', () => lastUpdateStatus);
 
 ipcMain.on('boot:retry', () => {
   void boot();
@@ -350,7 +373,7 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  installAppMenu({ logsDir: path.dirname(logPath()), releasesUrl: RELEASES_URL });
+  applyAppMenu();
   mainWindow = createMainWindow();
   mainWindow.webContents.once('did-finish-load', () => {
     void boot();

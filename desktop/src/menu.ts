@@ -42,6 +42,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     repo: 'GitHub 저장소',
     issues: '문제 신고',
     privacy: '개인정보 처리방침',
+    applyUpdate: '업데이트 v{version} 적용 (재시작)',
   },
   en: {
     file: 'File',
@@ -70,6 +71,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     repo: 'GitHub Repository',
     issues: 'Report an Issue',
     privacy: 'Privacy Policy',
+    applyUpdate: 'Apply Update v{version} (Restart)',
   },
 };
 
@@ -81,6 +83,8 @@ export interface MenuOptions {
   version: string;
   logsDir: string;
   releasesUrl: string;
+  // Set only once an update has been downloaded and is waiting for a restart (Windows).
+  update: { version: string; restart: () => void } | null;
 }
 
 // Pure (no Electron calls at build time) so the shape can be checked without launching the app.
@@ -134,6 +138,15 @@ export function buildMenuTemplate(o: MenuOptions): MenuItemConstructorOptions[] 
       label: s.help,
       role: 'help',
       submenu: [
+        ...(o.update
+          ? ([
+              {
+                label: s.applyUpdate.replace('{version}', o.update.version),
+                click: o.update.restart,
+              },
+              { type: 'separator' },
+            ] as MenuItemConstructorOptions[])
+          : []),
         { label: s.openLogs, click: () => void shell.openPath(o.logsDir) },
         { label: s.releases, click: open(o.releasesUrl) },
         { type: 'separator' },
@@ -147,7 +160,9 @@ export function buildMenuTemplate(o: MenuOptions): MenuItemConstructorOptions[] 
   ];
 }
 
-export function installAppMenu(opts: { logsDir: string; releasesUrl: string }): void {
+export function installAppMenu(
+  opts: Pick<MenuOptions, 'logsDir' | 'releasesUrl' | 'update'>,
+): void {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate(
       buildMenuTemplate({

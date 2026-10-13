@@ -45,6 +45,9 @@ contextBridge.exposeInMainWorld('desktop', {
     ipcRenderer.on('update:status', listener);
     return () => ipcRenderer.removeListener('update:status', listener);
   },
+  // Current status (or null): the 'update:status' event fires once, so a component that mounts
+  // late — or remounts after a layout switch / reload — asks for it instead of waiting.
+  getUpdateStatus: (): Promise<UpdateStatus | null> => ipcRenderer.invoke('update:get-status'),
   restartToUpdate: () => ipcRenderer.send('update:restart'),
   openReleasesPage: () => ipcRenderer.send('update:open-releases'),
 });
