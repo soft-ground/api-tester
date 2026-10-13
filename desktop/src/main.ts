@@ -259,6 +259,9 @@ function createMainWindow(): BrowserWindow {
     // Without this the title bar / taskbar show Electron's own icon in development and on Linux
     // (Windows and macOS packaged builds take it from the exe / app bundle, but this is harmless).
     icon: path.join(__dirname, 'icon.png'),
+    // Windows/Linux: keep the menu bar out of the way (Alt reveals it). No effect on macOS, whose
+    // menu lives in the global menu bar and takes no window space.
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
