@@ -280,6 +280,11 @@ function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
+    // Below this the request editor (what is left after the 220px sidebar and 300px tree) is only a
+    // few hundred px — measured 275px at 800 wide and 115px at 640 — so the window could be dragged
+    // down to something unusable. 900 keeps it at ~375px, and ~540px with the sidebar collapsed.
+    minWidth: 900,
+    minHeight: 560,
     // Without this the title bar / taskbar show Electron's own icon in development and on Linux
     // (Windows and macOS packaged builds take it from the exe / app bundle, but this is harmless).
     icon: path.join(__dirname, 'icon.png'),
