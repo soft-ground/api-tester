@@ -34,8 +34,9 @@ export default function HealthBadge() {
   };
 
   return (
-    <span className={`health-badge health-${state}`}>
-      <span className="dot" /> {label[state]}
+    <span className={`health-badge health-${state}`} title={label[state]}>
+      <span className="dot" />
+      <span className="health-label">{label[state]}</span>
     </span>
   );
 }

@@ -240,9 +240,9 @@ body {
   gap: 8px;
   justify-content: center;
 }
-.collapsed .health-badge {
-  max-width: 10px;
-  overflow: hidden;
+/* Collapsed rail is 56px wide: keep only the status dot (the label is in the tooltip). */
+.collapsed .health-label {
+  display: none;
 }
 
 .sidebar-footer {
