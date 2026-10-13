@@ -19,6 +19,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 import { startEmbeddedPostgres, type EmbeddedDb } from './db';
+import { installAppMenu } from './menu';
 
 let serverProc: ChildProcess | null = null;
 let embeddedDb: EmbeddedDb | null = null;
@@ -256,7 +257,9 @@ function createMainWindow(): BrowserWindow {
   return win;
 }
 
-const RELEASES_URL = 'https://github.com/soft-ground/api-tester/releases/latest';
+// The releases LIST, not /releases/latest: this repo publishes web/server (vX.Y.Z) and desktop
+// (desktop-vX.Y.Z) releases side by side, so "latest" can resolve to the other product's release.
+const RELEASES_URL = 'https://github.com/soft-ground/api-tester/releases';
 
 // Silent self-install (download in the background, install on restart) only works on Windows
 // here:
@@ -347,6 +350,7 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
+  installAppMenu({ logsDir: path.dirname(logPath()), releasesUrl: RELEASES_URL });
   mainWindow = createMainWindow();
   mainWindow.webContents.once('did-finish-load', () => {
     void boot();
